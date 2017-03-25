@@ -47,6 +47,28 @@ struct battle_t {
 
 } battles[USER_CNT / 2];
 
+int find_session_id_by_user_id(const char *user_id) {
+	int ret_session_id = -1;
+	log("find user '%s'\n", user_id);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(sessions[i].state == USER_STATE_LOGIN
+		|| sessions[i].state == USER_STATE_BATTLE) {
+			if(strncmp(user_id, sessions[i].user_id, USERID_SZ - 1)) {
+				ret_session_id = i;
+				break;
+			}
+		}
+	}
+
+	if(ret_session_id == -1) {
+		log("\t==> fail\n");
+	}else{
+		log("\t==> found: %d@%s\n", ret_session_id, sessions[ret_session_id].user_id);
+	}
+
+	return ret_session_id;
+}
+
 int get_unalloced_battle() {
 	int ret_battle_id = -1;
 	pthread_mutex_lock(&mlock);
@@ -136,6 +158,26 @@ int client_command_fetch_all_users(int session_id) {
 }
 
 int client_command_launch_battle(int session_id) {
+	int battle_id = get_unalloced_battle();
+	int conn = sessions[session_id].conn;
+	client_message_t *pcm = &sessions[session_id].cm;
+	log("%s launch battle with %s\n", sessions[session_id].user_id, pcm->user_id);
+
+	if(battle_id == -1) {
+		loge("fail to create battle for %s and %s\n", sessions[session_id].user_id, pcm->user_id);
+		send_to_client(conn, SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE);
+		return 0;
+	}else{
+		log("launch battle %d for %s and %s\n", battle_id, sessions[session_id].user_id, pcm->user_id);
+	}
+
+	int friend_id = find_session_id_by_user_id(pcm->user_id);
+	battles[battle_id].nr_users = 2;
+	battles[battle_id].users[0].session_id = session_id;
+	battles[battle_id].users[1].session_id = friend_id;
+	// FIXME:
+	send_to_client(sessions[friend_id].conn, SERVER_MESSAGE_INVITE_TO_BATTLE);
+
 	return 0;
 }
 
