@@ -166,7 +166,7 @@ typedef struct pos_t {
 // format of messages sended from client to server
 typedef struct client_message_t {
 	uint8_t command;
-	char user_id[USERID_SZ]; // last byte must be zero
+	char user_name[USERID_SZ]; // last byte must be zero
 } client_message_t;
 
 // format of messages sended from server to client
@@ -175,7 +175,7 @@ typedef struct server_message_t {
 	union {
 		// support at most five users
 		struct {
-			char user_id[USERID_SZ];
+			char user_name[USERID_SZ];
 			uint8_t user_state;
 		} all_users[USER_CNT];
 

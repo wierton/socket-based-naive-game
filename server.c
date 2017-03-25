@@ -23,7 +23,7 @@ void send_to_client(int conn, int reason);
 void close_session(int conn, int reason);
 
 struct session_t {
-	char user_id[USERID_SZ];
+	char user_name[USERID_SZ];
 	int conn;
 	int state;           // not login, login, battle
 	uint32_t battle_id;
@@ -47,13 +47,13 @@ struct battle_t {
 
 } battles[USER_CNT / 2];
 
-int find_session_id_by_user_id(const char *user_id) {
+int find_session_id_by_user_name(const char *user_name) {
 	int ret_session_id = -1;
-	log("find user '%s'\n", user_id);
+	log("find user '%s'\n", user_name);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_LOGIN
 		|| sessions[i].state == USER_STATE_BATTLE) {
-			if(strncmp(user_id, sessions[i].user_id, USERID_SZ - 1)) {
+			if(strncmp(user_name, sessions[i].user_name, USERID_SZ - 1)) {
 				ret_session_id = i;
 				break;
 			}
@@ -63,7 +63,7 @@ int find_session_id_by_user_id(const char *user_id) {
 	if(ret_session_id == -1) {
 		log("\t==> fail\n");
 	}else{
-		log("\t==> found: %d@%s\n", ret_session_id, sessions[ret_session_id].user_id);
+		log("\t==> found: %d@%s\n", ret_session_id, sessions[ret_session_id].user_name);
 	}
 
 	return ret_session_id;
@@ -111,13 +111,13 @@ int client_command_user_login(int session_id) {
 	int ret_code = 0;
 	int conn = sessions[session_id].conn;
 	client_message_t *pcm = &sessions[session_id].cm;
-	char *user_id = pcm->user_id;
-	log("user '%s' login\n", user_id);
+	char *user_name = pcm->user_name;
+	log("user '%s' login\n", user_name);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_LOGIN
 		|| sessions[i].state == USER_STATE_BATTLE) {
-			if(strncmp(user_id, sessions[i].user_id, USERID_SZ) == 0) {
-				log("user %d@%s duplicate with %dth user '%s'\n", session_id, user_id, i, sessions[i].user_id);
+			if(strncmp(user_name, sessions[i].user_name, USERID_SZ) == 0) {
+				log("user %d@%s duplicate with %dth user '%s'\n", session_id, user_name, i, sessions[i].user_name);
 				ret_code = -1;
 				break;
 			}
@@ -129,7 +129,7 @@ int client_command_user_login(int session_id) {
 		close_session(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
 	}else{
 		send_to_client(conn, SERVER_RESPONSE_LOGIN_SUCCESS);
-		strncpy(sessions[session_id].user_id, user_id, USERID_SZ - 1);
+		strncpy(sessions[session_id].user_name, user_name, USERID_SZ - 1);
 	}
 
 	return ret_code;
@@ -137,18 +137,18 @@ int client_command_user_login(int session_id) {
 
 int client_command_fetch_all_users(int session_id) {
 	int conn = sessions[session_id].conn;
-	char *user_id = sessions[session_id].user_id;
-	log("user '%s' trys to fetch all users' info\n", user_id);
+	char *user_name = sessions[session_id].user_name;
+	log("user '%s' trys to fetch all users' info\n", user_name);
 	server_message_t sm;
 	memset(&sm, 0, sizeof(server_message_t));
 	sm.response = SERVER_RESPONSE_ALL_USERS_INFO;
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_LOGIN
 		|| sessions[i].state == USER_STATE_BATTLE) {
-			log("\t==> found '%s' %s\n", sessions[i].user_id,
+			log("\t==> found '%s' %s\n", sessions[i].user_name,
 					sessions[i].state == USER_STATE_BATTLE ? "in battle" : "");
 			sm.all_users[i].user_state = sessions[i].state;
-			strncpy(sm.all_users[i].user_id, sessions[i].user_id, USERID_SZ - 1);
+			strncpy(sm.all_users[i].user_name, sessions[i].user_name, USERID_SZ - 1);
 		}
 	}
 
@@ -161,17 +161,17 @@ int client_command_launch_battle(int session_id) {
 	int battle_id = get_unalloced_battle();
 	int conn = sessions[session_id].conn;
 	client_message_t *pcm = &sessions[session_id].cm;
-	log("%s launch battle with %s\n", sessions[session_id].user_id, pcm->user_id);
+	log("%s launch battle with %s\n", sessions[session_id].user_name, pcm->user_name);
 
 	if(battle_id == -1) {
-		loge("fail to create battle for %s and %s\n", sessions[session_id].user_id, pcm->user_id);
+		loge("fail to create battle for %s and %s\n", sessions[session_id].user_name, pcm->user_name);
 		send_to_client(conn, SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE);
 		return 0;
 	}else{
-		log("launch battle %d for %s and %s\n", battle_id, sessions[session_id].user_id, pcm->user_id);
+		log("launch battle %d for %s and %s\n", battle_id, sessions[session_id].user_name, pcm->user_name);
 	}
 
-	int friend_id = find_session_id_by_user_id(pcm->user_id);
+	int friend_id = find_session_id_by_user_name(pcm->user_name);
 	battles[battle_id].nr_users = 2;
 	battles[battle_id].users[0].session_id = session_id;
 	battles[battle_id].users[1].session_id = friend_id;
@@ -191,7 +191,7 @@ int client_command_invite_user(int session_id) {
 
 int client_command_logout(int session_id) {
 	int conn = sessions[session_id].conn;
-	log("user %d@%s logout\n", session_id, sessions[session_id].user_id);
+	log("user %d@%s logout\n", session_id, sessions[session_id].user_name);
 	sessions[session_id].state = USER_STATE_UNUSED;
 	close(conn);
 	return -1;
