@@ -67,7 +67,7 @@ int client_command_user_login(int session_id) {
 		close_session(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
 	}else{
 		send_to_client(conn, SERVER_RESPONSE_LOGIN_SUCCESS);
-		strncpy(sessions[session_id].user_id, user_id, USERID_SZ);
+		strncpy(sessions[session_id].user_id, user_id, USERID_SZ - 1);
 	}
 
 	return ret_code;
@@ -76,7 +76,7 @@ int client_command_user_login(int session_id) {
 int client_command_fetch_all_users(int session_id) {
 	int conn = sessions[session_id].conn;
 	char *user_id = sessions[session_id].user_id;
-	log("user '%s' try to fetch all users' info\n", user_id);
+	log("user '%s' trys to fetch all users' info\n", user_id);
 	server_message_t sm;
 	memset(&sm, 0, sizeof(server_message_t));
 	sm.response = SERVER_RESPONSE_ALL_USERS_INFO;
@@ -86,7 +86,7 @@ int client_command_fetch_all_users(int session_id) {
 			log("\t==> found '%s' %s\n", sessions[i].user_id,
 					sessions[i].state == USER_STATE_BATTLE ? "in battle" : "");
 			sm.all_users[i].user_state = sessions[i].state;
-			strncpy(sm.all_users[i].user_id, sessions[i].user_id, USERID_SZ);
+			strncpy(sm.all_users[i].user_id, sessions[i].user_id, USERID_SZ - 1);
 		}
 	}
 
@@ -108,7 +108,11 @@ int client_command_invite_user(int session_id) {
 }
 
 int client_command_logout(int session_id) {
-	return 0;
+	int conn = sessions[session_id].conn;
+	log("user %d@%s logout\n", session_id, sessions[session_id].user_id);
+	sessions[session_id].state = USER_STATE_UNUSED;
+	close(conn);
+	return -1;
 }
 
 int client_command_move_up(int session_id) {
