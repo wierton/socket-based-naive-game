@@ -15,13 +15,15 @@ pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
  *
  * unused  -->  not login  -->  unused  // login fail
  * */
-#define USER_STATE_UNUSED    0
-#define USER_STATE_NOT_LOGIN 1
-#define USER_STATE_LOGIN     2
-#define USER_STATE_BATTLE    3
+
+void wrap_recv(int conn, client_message_t *pcm);
+void wrap_send(int conn, server_message_t *psm);
+
+void send_to_client(int conn, int reason);
+void close_session(int conn, int reason);
 
 struct session_t {
-	char userid[USERID_SZ];
+	char user_id[USERID_SZ];
 	int conn;
 	int state;           // not login, login, battle
 	client_message_t cm;
@@ -30,20 +32,66 @@ struct session_t {
 } sessions[USER_CNT];
 
 int get_unused_session() {
+	int ret_session_id = -1;
 	pthread_mutex_lock(&mlock);
 	for(int i = 0; i < USER_CNT; i++) {
-		if(sessions[i].state == USER_STATE_UNUSED)
-			return i;
+		if(sessions[i].state == USER_STATE_UNUSED) {
+			memset(&sessions[i], 0, sizeof(struct session_t));
+			sessions[i].state = USER_STATE_NOT_LOGIN;
+			ret_session_id = i;
+		}
 	}
 	pthread_mutex_unlock(&mlock);
-	return -1;
+	return ret_session_id;
 }
 
 int client_command_user_login(int session_id) {
-	return 0;
+	int ret_code = 0;
+	int conn = sessions[session_id].conn;
+	client_message_t *pcm = &sessions[session_id].cm;
+	char *user_id = pcm->user_id;
+	log("user '%s' login\n", user_id);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(sessions[i].state == USER_STATE_LOGIN
+		|| sessions[i].state == USER_STATE_BATTLE) {
+			if(strncmp(user_id, sessions[i].user_id, USERID_SZ) == 0) {
+				log("user %d@%s duplicate with %dth user '%s'\n", session_id, user_id, i, sessions[i].user_id);
+				ret_code = -1;
+				break;
+			}
+		}
+	}
+
+	// no duplicate user ids found
+	if(ret_code == -1) {
+		close_session(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
+	}else{
+		send_to_client(conn, SERVER_RESPONSE_LOGIN_SUCCESS);
+		strncpy(sessions[session_id].user_id, user_id, USERID_SZ);
+	}
+
+	return ret_code;
 }
 
 int client_command_fetch_all_users(int session_id) {
+	int conn = sessions[session_id].conn;
+	char *user_id = sessions[session_id].user_id;
+	log("user '%s' try to fetch all users' info\n", user_id);
+	server_message_t sm;
+	memset(&sm, 0, sizeof(server_message_t));
+	sm.response = SERVER_RESPONSE_ALL_USERS_INFO;
+	for(int i = 0; i < USER_CNT; i++) {
+		if(sessions[i].state == USER_STATE_LOGIN
+		|| sessions[i].state == USER_STATE_BATTLE) {
+			log("\t==> found '%s' %s\n", sessions[i].user_id,
+					sessions[i].state == USER_STATE_BATTLE ? "in battle" : "");
+			sm.all_users[i].user_state = sessions[i].state;
+			strncpy(sm.all_users[i].user_id, sessions[i].user_id, USERID_SZ);
+		}
+	}
+
+	wrap_send(conn, &sm);
+
 	return 0;
 }
 
@@ -121,11 +169,15 @@ void wrap_send(int conn, server_message_t *psm) {
 	}
 }
 
-void close_session(int conn, int reason) {
+void send_to_client(int conn, int reason) {
 	server_message_t sm;
 	memset(&sm, 0, sizeof(server_message_t));
 	sm.response = reason;
 	wrap_send(conn, &sm);
+}
+
+void close_session(int conn, int reason) {
+	send_to_client(conn, reason);
 	close(conn);
 }
 
@@ -179,9 +231,9 @@ int server_start() {
 }
 
 int main() {
-	int sockfd = server_start();
-
 	pthread_t thread;
+
+	int sockfd = server_start();
 
 	struct sockaddr_in client_addr;
 	socklen_t length = sizeof(client_addr);

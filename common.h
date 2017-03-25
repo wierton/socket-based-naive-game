@@ -109,7 +109,7 @@
 #define USERID_SZ  7
 #define USER_CNT   5
 
-#define MAX_ITEM ((USERID_SZ * USER_CNT) / sizeof(pos_t) - 1)
+#define MAX_ITEM 30
 
 #define CLIENT_COMMAND_USER_LOGIN        0
 #define CLIENT_COMMAND_FETCH_ALL_USERS   1
@@ -124,17 +124,23 @@
 #define CLIENT_COMMAND_FIRE              10
 #define CLIENT_COMMAND_END               11
 
-#define SERVER_RESPONSE_NOT_LOGIN                  0
-#define SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID      1 // user id has been registered by other users
-#define SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS   2 // server unable to handle more users
-#define SERVER_RESPONSE_ALL_USERS_ID               3
-#define SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE       4
-#define SERVER_RESPONSE_FRIEND_REJECT_BATTLE       5
-#define SERVER_RESPONSE_BATTLE_USER_NOT_LOGIN      6
-#define SERVER_RESPONSE_BATTLE_ALREADY_IN_BATTLE   7
+#define SERVER_RESPONSE_LOGIN_SUCCESS              0
+#define SERVER_RESPONSE_NOT_LOGIN                  1
+#define SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID      2 // user id has been registered by other users
+#define SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS   3 // server unable to handle more users
+#define SERVER_RESPONSE_ALL_USERS_INFO             4
+#define SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE       5
+#define SERVER_RESPONSE_FRIEND_REJECT_BATTLE       6
+#define SERVER_RESPONSE_BATTLE_USER_NOT_LOGIN      7
+#define SERVER_RESPONSE_BATTLE_ALREADY_IN_BATTLE   8
 
-#define SERVER_MESSAGE_BATTLE_INFORMATION          8
-#define SERVER_MESSAGE_YOU_ARE_DEAD                9
+#define SERVER_MESSAGE_BATTLE_INFORMATION          9
+#define SERVER_MESSAGE_YOU_ARE_DEAD                10
+
+#define USER_STATE_UNUSED    0
+#define USER_STATE_NOT_LOGIN 1
+#define USER_STATE_LOGIN     2
+#define USER_STATE_BATTLE    3
 
 typedef struct pos_t {
 	uint8_t x;
@@ -145,7 +151,7 @@ typedef struct pos_t {
 // format of messages sended from client to server
 typedef struct client_message_t {
 	uint8_t command;
-	char userid[USERID_SZ]; // last byte must be zero
+	char user_id[USERID_SZ]; // last byte must be zero
 } client_message_t;
 
 // format of messages sended from server to client
@@ -153,7 +159,10 @@ typedef struct server_message_t {
 	uint8_t response;
 	union {
 		// support at most five users
-		char all_users[USER_CNT][USERID_SZ];
+		struct {
+			char user_id[USERID_SZ];
+			uint8_t user_state;
+		} all_users[USER_CNT];
 
 		struct {
 			pos_t pos[MAX_ITEM];
