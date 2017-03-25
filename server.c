@@ -14,11 +14,6 @@ pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t battles_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t battles_users_lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* unused  -->  not login  -->  login  <-->  battle
- *
- * unused  -->  not login  -->  unused  // login fail
- * */
-
 void wrap_recv(int conn, client_message_t *pcm);
 void wrap_send(int conn, server_message_t *psm);
 
@@ -30,6 +25,7 @@ struct session_t {
 	int conn;
 	int state;           // not login, login, battle
 	uint32_t battle_id;
+	uint32_t inviter_id;
 	client_message_t cm;
 } sessions[USER_CNT];
 
@@ -51,7 +47,18 @@ struct battle_t {
 
 } battles[USER_CNT / 2];
 
-void user_join_battle(uint32_t battle_id, uint32_t session_id) {
+int query_session_built(uint32_t session_id) {
+	assert(session_id < USER_CNT);
+
+	if(sessions[session_id].state == USER_STATE_UNUSED
+	|| sessions[session_id].state == USER_STATE_NOT_LOGIN) {
+		return false;
+	}else{
+		return true;
+	}
+}
+
+void user_join_battle_common_part(uint32_t battle_id, uint32_t session_id, uint32_t joined_state) {
 	assert(battle_id < USER_CNT / 2 && session_id < USER_CNT);
 
 	int user_index = -1;
@@ -72,7 +79,7 @@ void user_join_battle(uint32_t battle_id, uint32_t session_id) {
 		battles[battle_id].nr_users ++;
 		battles[battle_id].users[user_index].is_used = true;
 		battles[battle_id].users[user_index].session_id = session_id;
-		sessions[user_id].state = USER_STATE_BATTLE;
+		sessions[user_id].state = joined_state;
 	}
 }
 
@@ -114,12 +121,25 @@ void user_quit_battle(uint32_t battle_id, uint32_t session_id) {
 	}
 }
 
+void user_join_battle(uint32_t battle_id, uint32_t session_id) {
+	user_join_battle_common_part(battle_id, session_id, USER_STATE_BATTLE);
+}
+
+void user_invited_to_join_battle(uint32_t battle_id, uint32_t session_id) {
+	if(sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
+		// quit old battle if user is invited by others
+		if(battle_id != sessions[session_id].battle_id) {
+			user_quit_battle(session_id, sessions[session_id].battle_id);
+		}
+	}
+	user_join_battle_common_part(battle_id, session_id, USER_STATE_WAIT_TO_BATTLE);
+}
+
 int find_session_id_by_user_name(const char *user_name) {
 	int ret_session_id = -1;
 	log("find user '%s'\n", user_name);
 	for(int i = 0; i < USER_CNT; i++) {
-		if(sessions[i].state == USER_STATE_LOGIN
-		|| sessions[i].state == USER_STATE_BATTLE) {
+		if(query_session_built(i)) {
 			if(strncmp(user_name, sessions[i].user_name, USERNAME_SIZE - 1)) {
 				ret_session_id = i;
 				break;
@@ -181,8 +201,7 @@ int client_command_user_login(int session_id) {
 	char *user_name = pcm->user_name;
 	log("user '%s' login\n", user_name);
 	for(int i = 0; i < USER_CNT; i++) {
-		if(sessions[i].state == USER_STATE_LOGIN
-		|| sessions[i].state == USER_STATE_BATTLE) {
+		if(query_session_built(i)) {
 			if(strncmp(user_name, sessions[i].user_name, USERNAME_SIZE) == 0) {
 				log("user %d@%s duplicate with %dth user '%s'\n", session_id, user_name, i, sessions[i].user_name);
 				ret_code = -1;
@@ -210,8 +229,7 @@ int client_command_fetch_all_users(int session_id) {
 	memset(&sm, 0, sizeof(server_message_t));
 	sm.response = SERVER_RESPONSE_ALL_USERS_INFO;
 	for(int i = 0; i < USER_CNT; i++) {
-		if(sessions[i].state == USER_STATE_LOGIN
-		|| sessions[i].state == USER_STATE_BATTLE) {
+		if(query_session_built(i)) {
 			logi("found '%s' %s\n", sessions[i].user_name,
 					sessions[i].state == USER_STATE_BATTLE ? "in battle" : "");
 			sm.all_users[i].user_state = sessions[i].state;
@@ -239,7 +257,8 @@ int invite_friend_to_battle(int battle_id, int user_id, int friend_id) {
 		logi("friend '%s' found\n", friend_name);
 
 		user_join_battle(battle_id, user_id);
-		user_join_battle(battle_id, friend_id);
+		user_invited_to_join_battle(battle_id, friend_id);
+		sessions[friend_id].inviter_id = user_id;
 
 		server_message_t sm;
 		memset(&sm, 0, sizeof(server_message_t));

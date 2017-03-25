@@ -162,10 +162,18 @@ enum {
 	SERVER_MESSAGE_YOU_ARE_DEAD,
 };
 
-#define USER_STATE_UNUSED    0
-#define USER_STATE_NOT_LOGIN 1
-#define USER_STATE_LOGIN     2
-#define USER_STATE_BATTLE    3
+
+/* unused  -->  not login  -->  login  <-...->  battle
+ *
+ * unused  -->  not login  -->  unused  // login fail
+ *
+ * login  <-->  invited to battle  <-->  battle
+ * */
+#define USER_STATE_UNUSED          0
+#define USER_STATE_NOT_LOGIN       1
+#define USER_STATE_LOGIN           2
+#define USER_STATE_BATTLE          3
+#define USER_STATE_WAIT_TO_BATTLE  4
 
 typedef struct pos_t {
 	uint8_t x;
