@@ -9,6 +9,14 @@
 #include <unistd.h>
 #include <termios.h>
 
+#ifndef false
+#define false 0
+#endif
+
+#ifndef true
+#define true 1
+#endif
+
 /* some special characters(terminal graph):
  *
  *  ▁ ▂ ▃ ▄ ▅ ▆ ▇ █ ▊ ▌ ▎ ▖ ▗ ▘ ▙ ▚ ▛ ▜ ▝ ▞ ▟ ━ ┃
@@ -150,8 +158,7 @@ enum {
 
 typedef struct pos_t {
 	uint8_t x;
-	uint8_t item_category:1; // this bit indicates whether a plane(1) or a bullet(0) appear at current position
-	uint8_t y:7; 
+	uint8_t y; 
 } pos_t;
 
 // format of messages sended from client to server
@@ -171,8 +178,9 @@ typedef struct server_message_t {
 		} all_users[USER_CNT];
 
 		struct {
-			pos_t pos[MAX_ITEM];
-			uint8_t life;
+			uint8_t life, nr_users;
+			pos_t user_pos[USER_CNT];
+			pos_t bullet_pos[MAX_ITEM];
 		};
 	};
 } server_message_t;

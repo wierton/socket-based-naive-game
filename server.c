@@ -26,10 +26,45 @@ struct session_t {
 	char user_id[USERID_SZ];
 	int conn;
 	int state;           // not login, login, battle
+	uint32_t battle_id;
 	client_message_t cm;
-	pos_t last_pos;
-	pos_t user_pos;      // make sense in battle
 } sessions[USER_CNT];
+
+struct battle_t {
+	int is_alloced;
+	size_t nr_users;
+	struct {
+		uint32_t session_id;
+		pos_t pos;
+		pos_t last_pos;
+	} users[USER_CNT];
+
+	struct {
+		int is_used;
+		pos_t pos;
+		pos_t last_pos;
+	} bullets[MAX_ITEM];
+
+} battles[USER_CNT / 2];
+
+int get_unalloced_battle() {
+	int ret_battle_id = -1;
+	pthread_mutex_lock(&mlock);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(battles[i].is_alloced == false) {
+			memset(&battles[i], 0, sizeof(struct battle_t));
+			battles[i].is_alloced = true;
+			ret_battle_id = i;
+		}
+	}
+	pthread_mutex_unlock(&mlock);
+	if(ret_battle_id == -1) {
+		loge("check here, returned battle id should not be -1\n");
+	}else{
+		log("alloc unalloced battle id #%d\n", ret_battle_id);
+	}
+	return ret_battle_id;
+}
 
 int get_unused_session() {
 	int ret_session_id = -1;
@@ -42,6 +77,11 @@ int get_unused_session() {
 		}
 	}
 	pthread_mutex_unlock(&mlock);
+	if(ret_session_id == -1) {
+		log("fail to alloc session id\n");
+	}else{
+		log("alloc unused session id #%d\n", ret_session_id);
+	}
 	return ret_session_id;
 }
 
