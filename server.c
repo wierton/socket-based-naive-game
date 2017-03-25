@@ -10,7 +10,9 @@
 
 #define PORT 50000
 
-pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t battles_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t battles_users_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* unused  -->  not login  -->  login  <-->  battle
  *
@@ -35,6 +37,7 @@ struct battle_t {
 	int is_alloced;
 	size_t nr_users;
 	struct {
+		int is_used;
 		uint32_t session_id;
 		pos_t pos;
 		pos_t last_pos;
@@ -47,6 +50,48 @@ struct battle_t {
 	} bullets[MAX_ITEM];
 
 } battles[USER_CNT / 2];
+
+void user_join_battle(uint32_t battle_id, uint32_t session_id) {
+	assert(battle_id < USER_CNT / 2 && session_id < USER_CNT);
+
+	int user_index = -1;
+
+	pthread_mutex_lock(&battles_users_lock);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(!(battles[battle_id].users[i].is_used)) {
+			user_index = i;
+		}
+	}
+	pthread_mutex_unlock(&battles_users_lock);
+
+	if(user_index == -1) {
+		loge("check here, user join in battle which has been full\n");
+	}else{
+		log("user %s join in battle %d(%lu users)\n", sessions[session_id].user_name, battle_id, battles[battle_id].nr_users);
+		battles[battle_id].nr_users ++;
+		battles[battle_id].users[user_index].is_used = true;
+		battles[battle_id].users[user_index].session_id = session_id;
+	}
+}
+
+void user_quit_battle(uint32_t battle_id, uint32_t session_id) {
+	assert(battle_id < USER_CNT / 2 && session_id < USER_CNT);
+
+	int user_index = -1;
+
+	for(int i = 0; i < USER_CNT; i++) {
+		if(battles[battle_id].users[i].is_used
+		&& battles[battle_id].users[i].session_id == session_id) {
+			user_index = i;
+		}
+	}
+
+	if(user_index == -1) {
+		loge("check here, user %s quit battle %d which he didn't join in\n", sessions[session_id].user_name, battle_id);
+	}else{
+		battles[battle_id].users[user_index].is_used = false;
+	}
+}
 
 int find_session_id_by_user_name(const char *user_name) {
 	int ret_session_id = -1;
@@ -72,7 +117,7 @@ int find_session_id_by_user_name(const char *user_name) {
 
 int get_unalloced_battle() {
 	int ret_battle_id = -1;
-	pthread_mutex_lock(&mlock);
+	pthread_mutex_lock(&battles_lock);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(battles[i].is_alloced == false) {
 			memset(&battles[i], 0, sizeof(struct battle_t));
@@ -80,7 +125,7 @@ int get_unalloced_battle() {
 			ret_battle_id = i;
 		}
 	}
-	pthread_mutex_unlock(&mlock);
+	pthread_mutex_unlock(&battles_lock);
 	if(ret_battle_id == -1) {
 		loge("check here, returned battle id should not be -1\n");
 	}else{
@@ -91,7 +136,7 @@ int get_unalloced_battle() {
 
 int get_unused_session() {
 	int ret_session_id = -1;
-	pthread_mutex_lock(&mlock);
+	pthread_mutex_lock(&sessions_lock);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_UNUSED) {
 			memset(&sessions[i], 0, sizeof(struct session_t));
@@ -99,7 +144,7 @@ int get_unused_session() {
 			ret_session_id = i;
 		}
 	}
-	pthread_mutex_unlock(&mlock);
+	pthread_mutex_unlock(&sessions_lock);
 	if(ret_session_id == -1) {
 		log("fail to alloc session id\n");
 	}else{
@@ -158,9 +203,49 @@ int client_command_fetch_all_users(int session_id) {
 	return 0;
 }
 
+int invite_friend_to_battle(int battle_id, int user_id, int friend_id) {
+	int conn = sessions[user_id].conn;
+	char *friend_name = sessions[friend_id].user_name;
+	if(friend_id == -1) {
+		logi("friend '%s' hasn't login\n", friend_name);
+		send_to_client(conn, SERVER_RESPONSE_BATTLE_FRIEND_NOT_LOGIN);
+		user_quit_battle(battle_id, friend_id);
+	}else if(sessions[friend_id].state != USER_STATE_LOGIN) {
+		logi("friend '%s' already in battle\n", friend_name);
+		send_to_client(conn, SERVER_RESPONSE_BATTLE_FRIEND_ALREADY_IN_BATTLE);
+		user_quit_battle(battle_id, friend_id);
+	}else{
+		logi("friend '%s' found\n", friend_name);
+
+		sessions[friend_id].battle_id = battle_id;
+
+		sessions[user_id].state = USER_STATE_BATTLE;
+		sessions[friend_id].state = USER_STATE_BATTLE;
+
+		battles[battle_id].nr_users = 2;
+		battles[battle_id].users[0].session_id = user_id;
+		battles[battle_id].users[1].session_id = friend_id;
+
+		server_message_t sm;
+		memset(&sm, 0, sizeof(server_message_t));
+		sm.response = SERVER_MESSAGE_INVITE_TO_BATTLE;
+		strncpy(sm.friend_name, sessions[user_id].user_name, USERNAME_SIZE - 1);
+		wrap_send(sessions[friend_id].conn, &sm);
+	}
+
+	return 0;
+}
+
 int client_command_launch_battle(int session_id) {
-	int battle_id = get_unalloced_battle();
 	int conn = sessions[session_id].conn;
+
+	if(sessions[session_id].state == USER_STATE_BATTLE) {
+		log("user '%s' who try to launch battle has been in battle\n", sessions[session_id].user_name);
+		send_to_client(conn, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
+		return 0;
+	}
+
+	int battle_id = get_unalloced_battle();
 	client_message_t *pcm = &sessions[session_id].cm;
 	int friend_id = find_session_id_by_user_name(pcm->user_name);
 	log("%s launch battle with %s\n", sessions[session_id].user_name, pcm->user_name);
@@ -171,26 +256,10 @@ int client_command_launch_battle(int session_id) {
 		return 0;
 	}else{
 		logi("launch battle %d for %s and %s\n", battle_id, sessions[session_id].user_name, pcm->user_name);
+		sessions[session_id].battle_id = battle_id;
 	}
 
-	if(friend_id == -1) {
-		logi("friend '%s' hasn't login\n", pcm->user_name);
-		send_to_client(conn, SERVER_RESPONSE_BATTLE_FRIEND_NOT_LOGIN);
-	}else if(sessions[friend_id].state != USER_STATE_LOGIN) {
-		logi("friend '%s' already in battle\n", pcm->user_name);
-		send_to_client(conn, SERVER_RESPONSE_BATTLE_ALREADY_IN_BATTLE);
-	}else{
-		logi("invite friend '%s' success\n", pcm->user_name);
-		battles[battle_id].nr_users = 2;
-		battles[battle_id].users[0].session_id = session_id;
-		battles[battle_id].users[1].session_id = friend_id;
-
-		server_message_t sm;
-		memset(&sm, 0, sizeof(server_message_t));
-		sm.response = SERVER_MESSAGE_INVITE_TO_BATTLE;
-		strncpy(sm.friend_name, sessions[session_id].user_name, USERNAME_SIZE - 1);
-		wrap_send(sessions[friend_id].conn, &sm);
-	}
+	invite_friend_to_battle(battle_id, session_id, friend_id);
 
 	return 0;
 }
@@ -200,6 +269,14 @@ int client_command_quit_battle(int session_id) {
 }
 
 int client_command_invite_user(int session_id) {
+	return 0;
+}
+
+int client_command_accept_battle(int session_id) {
+	return 0;
+}
+
+int client_command_reject_battle(int session_id) {
 	return 0;
 }
 
@@ -354,7 +431,9 @@ int main() {
 		}
 	}
 
-	pthread_mutex_destroy(&mlock);
+	pthread_mutex_destroy(&sessions_lock);
+	pthread_mutex_destroy(&battles_lock);
+	pthread_mutex_destroy(&battles_users_lock);
 
 	return 0;
 }

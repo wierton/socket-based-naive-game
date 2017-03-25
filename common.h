@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -149,10 +150,13 @@ enum {
 	SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE,
 	SERVER_RESPONSE_FRIEND_REJECT_BATTLE,
 	SERVER_RESPONSE_BATTLE_FRIEND_NOT_LOGIN,
-	SERVER_RESPONSE_BATTLE_ALREADY_IN_BATTLE,
+	SERVER_RESPONSE_BATTLE_FRIEND_ALREADY_IN_BATTLE,
 	SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE,
+	SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE,
 	/* ----------------------------------------------- */
 	SERVER_MESSAGE_INVITE_TO_BATTLE,
+	SERVER_MESSAGE_USER_QUIT_BATTLE,
+	SERVER_MESSAGE_BATTLE_DISBANDED,          // since no other users in this battle
 	SERVER_MESSAGE_BATTLE_INFORMATION,
 	SERVER_MESSAGE_YOU_ARE_DEAD,
 };
