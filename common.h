@@ -94,6 +94,10 @@
 #define log(fmt, ...) \
 	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
 
+// inner log
+#define logi(fmt, ...) \
+	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: ==> " fmt, __func__, __LINE__, ## __VA_ARGS__)
+
 #define loge(fmt, ...) \
 	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
 
@@ -114,7 +118,7 @@
 #define SCR_W 60
 #define SCR_H 40
 
-#define USERID_SZ  7
+#define USERNAME_SIZE  7
 #define USER_CNT   5
 
 #define MAX_ITEM 30
@@ -166,7 +170,7 @@ typedef struct pos_t {
 // format of messages sended from client to server
 typedef struct client_message_t {
 	uint8_t command;
-	char user_name[USERID_SZ]; // last byte must be zero
+	char user_name[USERNAME_SIZE]; // last byte must be zero
 } client_message_t;
 
 // format of messages sended from server to client
@@ -174,8 +178,10 @@ typedef struct server_message_t {
 	uint8_t response;
 	union {
 		// support at most five users
+		char friend_name[USERNAME_SIZE];
+
 		struct {
-			char user_name[USERID_SZ];
+			char user_name[USERNAME_SIZE];
 			uint8_t user_state;
 		} all_users[USER_CNT];
 

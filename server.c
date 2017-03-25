@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
 
 #include "common.h"
 
@@ -23,7 +24,7 @@ void send_to_client(int conn, int reason);
 void close_session(int conn, int reason);
 
 struct session_t {
-	char user_name[USERID_SZ];
+	char user_name[USERNAME_SIZE];
 	int conn;
 	int state;           // not login, login, battle
 	uint32_t battle_id;
@@ -53,7 +54,7 @@ int find_session_id_by_user_name(const char *user_name) {
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_LOGIN
 		|| sessions[i].state == USER_STATE_BATTLE) {
-			if(strncmp(user_name, sessions[i].user_name, USERID_SZ - 1)) {
+			if(strncmp(user_name, sessions[i].user_name, USERNAME_SIZE - 1)) {
 				ret_session_id = i;
 				break;
 			}
@@ -61,9 +62,9 @@ int find_session_id_by_user_name(const char *user_name) {
 	}
 
 	if(ret_session_id == -1) {
-		log("\t==> fail\n");
+		logi("fail\n");
 	}else{
-		log("\t==> found: %d@%s\n", ret_session_id, sessions[ret_session_id].user_name);
+		logi("found: %d@%s\n", ret_session_id, sessions[ret_session_id].user_name);
 	}
 
 	return ret_session_id;
@@ -116,7 +117,7 @@ int client_command_user_login(int session_id) {
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_LOGIN
 		|| sessions[i].state == USER_STATE_BATTLE) {
-			if(strncmp(user_name, sessions[i].user_name, USERID_SZ) == 0) {
+			if(strncmp(user_name, sessions[i].user_name, USERNAME_SIZE) == 0) {
 				log("user %d@%s duplicate with %dth user '%s'\n", session_id, user_name, i, sessions[i].user_name);
 				ret_code = -1;
 				break;
@@ -129,7 +130,7 @@ int client_command_user_login(int session_id) {
 		close_session(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
 	}else{
 		send_to_client(conn, SERVER_RESPONSE_LOGIN_SUCCESS);
-		strncpy(sessions[session_id].user_name, user_name, USERID_SZ - 1);
+		strncpy(sessions[session_id].user_name, user_name, USERNAME_SIZE - 1);
 	}
 
 	return ret_code;
@@ -145,10 +146,10 @@ int client_command_fetch_all_users(int session_id) {
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_LOGIN
 		|| sessions[i].state == USER_STATE_BATTLE) {
-			log("\t==> found '%s' %s\n", sessions[i].user_name,
+			logi("found '%s' %s\n", sessions[i].user_name,
 					sessions[i].state == USER_STATE_BATTLE ? "in battle" : "");
 			sm.all_users[i].user_state = sessions[i].state;
-			strncpy(sm.all_users[i].user_name, sessions[i].user_name, USERID_SZ - 1);
+			strncpy(sm.all_users[i].user_name, sessions[i].user_name, USERNAME_SIZE - 1);
 		}
 	}
 
@@ -161,6 +162,7 @@ int client_command_launch_battle(int session_id) {
 	int battle_id = get_unalloced_battle();
 	int conn = sessions[session_id].conn;
 	client_message_t *pcm = &sessions[session_id].cm;
+	int friend_id = find_session_id_by_user_name(pcm->user_name);
 	log("%s launch battle with %s\n", sessions[session_id].user_name, pcm->user_name);
 
 	if(battle_id == -1) {
@@ -168,15 +170,27 @@ int client_command_launch_battle(int session_id) {
 		send_to_client(conn, SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE);
 		return 0;
 	}else{
-		log("launch battle %d for %s and %s\n", battle_id, sessions[session_id].user_name, pcm->user_name);
+		logi("launch battle %d for %s and %s\n", battle_id, sessions[session_id].user_name, pcm->user_name);
 	}
 
-	int friend_id = find_session_id_by_user_name(pcm->user_name);
-	battles[battle_id].nr_users = 2;
-	battles[battle_id].users[0].session_id = session_id;
-	battles[battle_id].users[1].session_id = friend_id;
-	// FIXME:
-	send_to_client(sessions[friend_id].conn, SERVER_MESSAGE_INVITE_TO_BATTLE);
+	if(friend_id == -1) {
+		logi("friend '%s' hasn't login\n", pcm->user_name);
+		send_to_client(conn, SERVER_RESPONSE_BATTLE_FRIEND_NOT_LOGIN);
+	}else if(sessions[friend_id].state != USER_STATE_LOGIN) {
+		logi("friend '%s' already in battle\n", pcm->user_name);
+		send_to_client(conn, SERVER_RESPONSE_BATTLE_ALREADY_IN_BATTLE);
+	}else{
+		logi("invite friend '%s' success\n", pcm->user_name);
+		battles[battle_id].nr_users = 2;
+		battles[battle_id].users[0].session_id = session_id;
+		battles[battle_id].users[1].session_id = friend_id;
+
+		server_message_t sm;
+		memset(&sm, 0, sizeof(server_message_t));
+		sm.response = SERVER_MESSAGE_INVITE_TO_BATTLE;
+		strncpy(sm.friend_name, sessions[session_id].user_name, USERNAME_SIZE - 1);
+		wrap_send(sessions[friend_id].conn, &sm);
+	}
 
 	return 0;
 }
@@ -292,6 +306,11 @@ void *session_start(void *args) {
 	return NULL;
 }
 
+void *run_battle(void *args) {
+	// TODO:
+	return NULL;
+}
+
 int server_start() {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -317,6 +336,8 @@ int server_start() {
 }
 
 int main() {
+	srand(time(NULL));
+
 	pthread_t thread;
 
 	int sockfd = server_start();
