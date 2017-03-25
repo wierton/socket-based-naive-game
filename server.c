@@ -68,9 +68,11 @@ void user_join_battle(uint32_t battle_id, uint32_t session_id) {
 		loge("check here, user join in battle which has been full\n");
 	}else{
 		log("user %s join in battle %d(%lu users)\n", sessions[session_id].user_name, battle_id, battles[battle_id].nr_users);
+		int user_id = battles[battle_id].users[user_index].session_id;
 		battles[battle_id].nr_users ++;
 		battles[battle_id].users[user_index].is_used = true;
 		battles[battle_id].users[user_index].session_id = session_id;
+		sessions[user_id].state = USER_STATE_BATTLE;
 	}
 }
 
@@ -89,7 +91,26 @@ void user_quit_battle(uint32_t battle_id, uint32_t session_id) {
 	if(user_index == -1) {
 		loge("check here, user %s quit battle %d which he didn't join in\n", sessions[session_id].user_name, battle_id);
 	}else{
+		log("user %s quit from battle %d(%lu users)\n", sessions[session_id].user_name, battle_id, battles[battle_id].nr_users);
+		int user_id = battles[battle_id].users[user_index].session_id;
+		battles[battle_id].nr_users --;
 		battles[battle_id].users[user_index].is_used = false;
+		sessions[user_id].state = USER_STATE_LOGIN;
+	}
+
+	if(battles[battle_id].nr_users <= 1) {
+		// disband battle
+		for(int i = 0; i < USER_CNT; i++) {
+			if(battles[battle_id].users[i].is_used) {
+				battles[battle_id].users[i].is_used = false;
+				int user_id = battles[battle_id].users[i].session_id;
+				log("force quit user %s from battle\n", sessions[user_id].user_name);
+				int conn = sessions[user_id].conn;
+				send_to_client(conn, SERVER_MESSAGE_BATTLE_DISBANDED);
+			}
+		}
+
+		battles[battle_id].is_alloced = false;
 	}
 }
 
@@ -217,14 +238,8 @@ int invite_friend_to_battle(int battle_id, int user_id, int friend_id) {
 	}else{
 		logi("friend '%s' found\n", friend_name);
 
-		sessions[friend_id].battle_id = battle_id;
-
-		sessions[user_id].state = USER_STATE_BATTLE;
-		sessions[friend_id].state = USER_STATE_BATTLE;
-
-		battles[battle_id].nr_users = 2;
-		battles[battle_id].users[0].session_id = user_id;
-		battles[battle_id].users[1].session_id = friend_id;
+		user_join_battle(battle_id, user_id);
+		user_join_battle(battle_id, friend_id);
 
 		server_message_t sm;
 		memset(&sm, 0, sizeof(server_message_t));
@@ -265,10 +280,27 @@ int client_command_launch_battle(int session_id) {
 }
 
 int client_command_quit_battle(int session_id) {
+	if(sessions[session_id].state != USER_STATE_BATTLE) {
+		send_to_client(sessions[session_id].conn, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
+	}else{
+		user_quit_battle(sessions[session_id].battle_id, session_id);
+	}
 	return 0;
 }
 
 int client_command_invite_user(int session_id) {
+	client_message_t *pcm = &sessions[session_id].cm;
+	int battle_id = sessions[session_id].battle_id;
+	int friend_id = find_session_id_by_user_name(pcm->user_name);
+
+	if(sessions[session_id].state != USER_STATE_BATTLE) {
+		log("user %s who invites friend %s wasn't in battle\n", sessions[session_id].user_name, pcm->user_name);
+		send_to_client(sessions[session_id].conn, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
+	}else{
+		logi("invite user %s to battle #%d\n", sessions[friend_id].user_name, battle_id);
+		sessions[friend_id].battle_id = battle_id;
+		invite_friend_to_battle(battle_id, session_id, friend_id);
+	}
 	return 0;
 }
 
