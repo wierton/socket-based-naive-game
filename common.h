@@ -1,13 +1,16 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <termios.h>
 
-/* some special characters:
+/* some special characters(terminal graph):
+ *
  *  ▁ ▂ ▃ ▄ ▅ ▆ ▇ █ ▊ ▌ ▎ ▖ ▗ ▘ ▙ ▚ ▛ ▜ ▝ ▞ ▟ ━ ┃
  *
  *  ┏ ┓ ┗ ┛ ┣ ┫ ┳ ┻ ╋ ╸ ╹ ╺
@@ -80,6 +83,14 @@
 #define VT100_COLOR_NORMAL   "38"
 
 
+#define eprintf(fmt, ...) do { \
+	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__); \
+	exit(0); \
+} while(0)
+
+#define log(fmt, ...) \
+	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
+
 /* detects the width and height of local screen firstly by `ioctl`
  *
  * usage of ioctl:
@@ -99,25 +110,39 @@
 
 #define CLIENT_COMMAND_USER_LOGIN        0
 #define CLIENT_COMMAND_FETCH_ALL_USERS   1
-#define CLIENT_COMMAND_LAUNCH_CHALLENGE  2
+#define CLIENT_COMMAND_LAUNCH_BATTLE     2
+#define CLIENT_COMMAND_QUIT_BATTLE       3
+#define CLIENT_COMMAND_INVITE_USER       4
+#define CLIENT_COMMAND_LOGOUT            5
+#define CLIENT_COMMAND_MOVE_UP           6
+#define CLIENT_COMMAND_MOVE_DOWN         7
+#define CLIENT_COMMAND_MOVE_LEFT         8
+#define CLIENT_COMMAND_MOVE_RIGHT        9
+#define CLIENT_COMMAND_FIRE              10
 
 #define SERVER_RESPONSE_NOT_LOGIN               0
 #define SERVER_RESPONSE_LOGIN_FAIL              1 // user id has been registered by other users
 #define SERVER_RESPONSE_ALL_USERS_ID            2
-#define SERVER_RESPONSE_FRIEND_ACCEPT_CHALLENGE 3
-#define SERVER_RESPONSE_FRIEND_REJECT_CHALLENGE 4
-#define SERVER_MESSAGE_BATTLE_INFORMATION       5
-#define SERVER_MESSAGE_YOU_ARE_DEAD             6
+#define SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE    3
+#define SERVER_RESPONSE_FRIEND_REJECT_BATTLE    4
+#define SERVER_RESPONSE_BATTLE_USER_NOT_LOGIN   5
+
+#define SERVER_MESSAGE_BATTLE_INFORMATION       6
+#define SERVER_MESSAGE_YOU_ARE_DEAD             7
 
 typedef struct pos_t {
-	uint8_t x, y;
+	uint8_t x;
+	uint8_t item_category:1; // this bit indicates whether a plane(1) or a bullet(0) appear at current position
+	uint8_t y:7; 
 } pos_t;
 
+// format of messages sended from client to server
 typedef struct client_message_t {
 	uint8_t command;
 	char userid[USERID_SZ]; // last byte must be zero
-} client_message_t; // messages format sended from client to server
+} client_message_t;
 
+// format of messages sended from server to client
 typedef struct server_message_t {
 	uint8_t response;
 	union {
@@ -126,7 +151,7 @@ typedef struct server_message_t {
 
 		struct {
 			pos_t pos[MAX_ITEM];
-			int life;
+			uint8_t life;
 		};
 	};
 } server_message_t;
