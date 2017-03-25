@@ -9,6 +9,8 @@
 
 #define PORT 50000
 
+pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
+
 /* unused  -->  not login  -->  login  <-->  battle
  *
  * unused  -->  not login  -->  unused  // login fail
@@ -28,10 +30,12 @@ struct session_t {
 } sessions[USER_CNT];
 
 int get_unused_session() {
+	pthread_mutex_lock(&mlock);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_UNUSED)
 			return i;
 	}
+	pthread_mutex_unlock(&mlock);
 	return -1;
 }
 
@@ -190,6 +194,8 @@ int main() {
 			loge("fail to create thread.\n");
 		}
 	}
+
+	pthread_mutex_destroy(&mlock);
 
 	return 0;
 }
