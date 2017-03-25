@@ -9,7 +9,144 @@
 
 #define PORT 50000
 
-void *handler() {
+/* unused  -->  not login  -->  login  <-->  battle
+ *
+ * unused  -->  not login  -->  unused  // login fail
+ * */
+#define USER_STATE_UNUSED    0
+#define USER_STATE_NOT_LOGIN 1
+#define USER_STATE_LOGIN     2
+#define USER_STATE_BATTLE    3
+
+struct session_t {
+	char userid[USERID_SZ];
+	int conn;
+	int state;           // not login, login, battle
+	client_message_t cm;
+	pos_t last_pos;
+	pos_t user_pos;      // make sense in battle
+} sessions[USER_CNT];
+
+int get_unused_session() {
+	for(int i = 0; i < USER_CNT; i++) {
+		if(sessions[i].state == USER_STATE_UNUSED)
+			return i;
+	}
+	return -1;
+}
+
+int client_command_user_login(int session_id) {
+	return 0;
+}
+
+int client_command_fetch_all_users(int session_id) {
+	return 0;
+}
+
+int client_command_launch_battle(int session_id) {
+	return 0;
+}
+
+int client_command_quit_battle(int session_id) {
+	return 0;
+}
+
+int client_command_invite_user(int session_id) {
+	return 0;
+}
+
+int client_command_logout(int session_id) {
+	return 0;
+}
+
+int client_command_move_up(int session_id) {
+	return 0;
+}
+
+int client_command_move_down(int session_id) {
+	return 0;
+}
+
+int client_command_move_left(int session_id) {
+	return 0;
+}
+
+int client_command_move_right(int session_id) {
+	return 0;
+}
+
+int client_command_fire(int session_id) {
+	return 0;
+}
+
+static int(*handler[])(int) = {
+	[CLIENT_COMMAND_USER_LOGIN] = client_command_user_login,
+	[CLIENT_COMMAND_FETCH_ALL_USERS] = client_command_fetch_all_users,
+	[CLIENT_COMMAND_LAUNCH_BATTLE] = client_command_launch_battle,
+	[CLIENT_COMMAND_QUIT_BATTLE] = client_command_quit_battle,
+	[CLIENT_COMMAND_INVITE_USER] = client_command_invite_user,
+	[CLIENT_COMMAND_LOGOUT] = client_command_logout,
+	[CLIENT_COMMAND_MOVE_UP] = client_command_move_up,
+	[CLIENT_COMMAND_MOVE_DOWN] = client_command_move_down,
+	[CLIENT_COMMAND_MOVE_LEFT] = client_command_move_left,
+	[CLIENT_COMMAND_MOVE_RIGHT] = client_command_move_right,
+	[CLIENT_COMMAND_FIRE] = client_command_fire,
+};
+
+void wrap_recv(int conn, client_message_t *pcm) {
+	size_t total_len = 0;
+	while(total_len < sizeof(client_message_t)) {
+		size_t len = recv(conn, pcm, sizeof(client_message_t) - total_len, 0);
+		if(len < 0) {
+			loge("broken pipe\n");
+		}
+
+		total_len += len;
+	}
+}
+
+void wrap_send(int conn, server_message_t *psm) {
+	size_t total_len = 0;
+	while(total_len < sizeof(server_message_t)) {
+		size_t len = send(conn, psm, sizeof(server_message_t) - total_len, 0);
+		if(len < 0) {
+			loge("broken pipe\n");
+		}
+
+		total_len += len;
+	}
+}
+
+void close_session(int conn, int reason) {
+	server_message_t sm;
+	memset(&sm, 0, sizeof(server_message_t));
+	sm.response = reason;
+	wrap_send(conn, &sm);
+	close(conn);
+}
+
+void *session_start(void *args) {
+	int session_id = -1;
+	int conn = (int)(uintptr_t)args;
+	client_message_t *pcm = NULL;
+	if((session_id = get_unused_session()) < 0) {
+		close_session(conn, SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS);
+		return NULL;
+	}else{
+		sessions[session_id].conn = conn;
+		pcm = &sessions[session_id].cm;
+		memset(pcm, 0, sizeof(client_message_t));
+	}
+
+	while(1) {
+		wrap_recv(conn, pcm);
+		if(pcm->command >= CLIENT_COMMAND_END)
+			continue;
+
+		int ret_code = handler[pcm->command](session_id);
+		if(ret_code < 0)
+			break;
+	}
 	return NULL;
 }
 
@@ -48,9 +185,9 @@ int main() {
 		int conn = accept(sockfd, (struct sockaddr*)&client_addr, &length);
 		log("connected by %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 		if(conn < 0) {
-			fprintf(stderr, "fail to accept client.\n");
-		}else if(pthread_create(&thread, NULL, handler, &conn) != 0) {
-			fprintf(stderr, "fail to create thread.\n");
+			loge("fail to accept client.\n");
+		}else if(pthread_create(&thread, NULL, session_start, (void *)(uintptr_t)conn) != 0) {
+			loge("fail to create thread.\n");
 		}
 	}
 

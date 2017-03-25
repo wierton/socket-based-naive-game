@@ -83,13 +83,16 @@
 #define VT100_COLOR_NORMAL   "38"
 
 
-#define eprintf(fmt, ...) do { \
-	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__); \
-	exit(0); \
-} while(0)
-
 #define log(fmt, ...) \
 	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
+
+#define loge(fmt, ...) \
+	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
+
+#define eprintf(fmt, ...) do { \
+	loge("\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__); \
+	exit(0); \
+} while(0)
 
 /* detects the width and height of local screen firstly by `ioctl`
  *
@@ -119,16 +122,19 @@
 #define CLIENT_COMMAND_MOVE_LEFT         8
 #define CLIENT_COMMAND_MOVE_RIGHT        9
 #define CLIENT_COMMAND_FIRE              10
+#define CLIENT_COMMAND_END               11
 
-#define SERVER_RESPONSE_NOT_LOGIN               0
-#define SERVER_RESPONSE_LOGIN_FAIL              1 // user id has been registered by other users
-#define SERVER_RESPONSE_ALL_USERS_ID            2
-#define SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE    3
-#define SERVER_RESPONSE_FRIEND_REJECT_BATTLE    4
-#define SERVER_RESPONSE_BATTLE_USER_NOT_LOGIN   5
+#define SERVER_RESPONSE_NOT_LOGIN                  0
+#define SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID      1 // user id has been registered by other users
+#define SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS   2 // server unable to handle more users
+#define SERVER_RESPONSE_ALL_USERS_ID               3
+#define SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE       4
+#define SERVER_RESPONSE_FRIEND_REJECT_BATTLE       5
+#define SERVER_RESPONSE_BATTLE_USER_NOT_LOGIN      6
+#define SERVER_RESPONSE_BATTLE_ALREADY_IN_BATTLE   7
 
-#define SERVER_MESSAGE_BATTLE_INFORMATION       6
-#define SERVER_MESSAGE_YOU_ARE_DEAD             7
+#define SERVER_MESSAGE_BATTLE_INFORMATION          8
+#define SERVER_MESSAGE_YOU_ARE_DEAD                9
 
 typedef struct pos_t {
 	uint8_t x;
