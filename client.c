@@ -6,21 +6,21 @@
 #include "common.h"
 
 enum {
-	MenuLaunchBattle,
-	MenuQuitBattle,
-	MenuQuitGame,
+	buttonLaunchBattle,
+	buttonQuitBattle,
+	buttonQuitGame,
 };
 
 int client_fd = -1;
 
-struct menu_t {
+struct button_t {
 	pos_t pos;
 	const char *s;
-} menus[] = {
-	[MenuLaunchBattle] = {{7, 3},  "launch battle"},
-	[MenuQuitGame]     = {{7, 7}, "  quit game  "},
+} buttons[] = {
+	[buttonLaunchBattle] = {{7, 3},  "launch battle"},
+	[buttonQuitGame]     = {{7, 7}, "  quit game  "},
 
-	[MenuQuitBattle]   = {{7, 11},   "quit battle"},
+	[buttonQuitBattle]   = {{7, 11},   "quit battle"},
 };
 
 static char *server_addr = "127.0.0.1";
@@ -56,13 +56,14 @@ void flip_screen() {
 		for(int j = 0; j < SCR_W; j++) {
 			printf(" ");
 		}
+		printf("\n");
 	}
 }
 
-void draw_menu(uint32_t menu_id) {
-	int x = menus[menu_id].pos.x;
-	int y = menus[menu_id].pos.y;
-	const char *s = menus[menu_id].s;
+void draw_button(uint32_t button_id) {
+	int x = buttons[button_id].pos.x;
+	int y = buttons[button_id].pos.y;
+	const char *s = buttons[button_id].s;
 	int len = strlen(s);
 	set_cursor(x, y);
 	printf("┌");
@@ -80,10 +81,10 @@ void draw_menu(uint32_t menu_id) {
 	printf("┘");
 }
 
-void menu_selected(uint32_t menu_id) {
-	int x = menus[menu_id].pos.x;
-	int y = menus[menu_id].pos.y;
-	const char *s = menus[menu_id].s;
+void button_selected(uint32_t button_id) {
+	int x = buttons[button_id].pos.x;
+	int y = buttons[button_id].pos.y;
+	const char *s = buttons[button_id].s;
 	int len = strlen(s);
 	set_cursor(x, y);
 	printf("\033[1m");
@@ -103,11 +104,16 @@ void menu_selected(uint32_t menu_id) {
 	printf("\033[0m");
 }
 
+void accept_command() {
+}
+
 int main() {
 	// client_fd = connect_to_server();
 	flip_screen();
-	draw_menu(MenuLaunchBattle);
-	draw_menu(MenuQuitGame);
-	menu_selected(MenuQuitBattle);
+	draw_button(buttonLaunchBattle);
+	draw_button(buttonQuitGame);
+	button_selected(buttonQuitBattle);
+
+	set_cursor(1, SCR_H + 1);
 	return 0;
 }
