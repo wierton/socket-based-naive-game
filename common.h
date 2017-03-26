@@ -149,11 +149,12 @@ enum {
 	SERVER_RESPONSE_ALL_USERS_INFO,
 	SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE,
 	SERVER_RESPONSE_FRIEND_REJECT_BATTLE,
-	SERVER_RESPONSE_BATTLE_FRIEND_NOT_LOGIN,
-	SERVER_RESPONSE_BATTLE_FRIEND_ALREADY_IN_BATTLE,
+	SERVER_RESPONSE_FRIEND_NOT_LOGIN,
+	SERVER_RESPONSE_FRIEND_ALREADY_IN_BATTLE,
 	SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE,
 	SERVER_RESPONSE_YOURE_NOT_IN_BATTLE,
 	SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE,
+	SERVER_RESPONSE_NOBODY_INVITE_YOU,
 	/* ----------------------------------------------- */
 	SERVER_MESSAGE_INVITE_TO_BATTLE,
 	SERVER_MESSAGE_USER_QUIT_BATTLE,
@@ -188,7 +189,11 @@ typedef struct client_message_t {
 
 // format of messages sended from server to client
 typedef struct server_message_t {
-	uint8_t response;
+	union {
+		uint8_t response;
+		uint8_t message;
+	};
+
 	union {
 		// support at most five users
 		char friend_name[USERNAME_SIZE];
