@@ -2,12 +2,19 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdarg.h>
 #include <readline/readline.h>
 
 #include "common.h"
 
-// static int scr_actual_w = 0;
-// static int scr_actual_h = 0;
+void bottom_bar_output(const char *format, ...);
+
+char *accept_input(const char *prompt);
+
+void resume_and_exit(int status);
+
+static int scr_actual_w = 0;
+static int scr_actual_h = 0;
 
 enum {
 	buttonLogin = 0,
@@ -20,13 +27,29 @@ int client_fd = -1;
 
 static struct termio raw_termio;
 
+int button_login() {
+	char *name = accept_input("your name: ");
+	bottom_bar_output("register your name '%s' to server...", name);
+	return 0;
+}
+
+int button_launch_battle() {
+	return 0;
+}
+
+int button_quit_game() {
+	resume_and_exit(0);
+	return 0;
+}
+
 struct button_t {
 	pos_t pos;
 	const char *s;
+	int (*button_func)();
 } buttons[] = {
-	[buttonLogin]        = {{7, 5}, "    login    "},
-	[buttonLaunchBattle] = {{7, 9},  "launch battle"},
-	[buttonQuitGame]     = {{7, 13},  "  quit game  "},
+	[buttonLogin]        = {{7, 5}, "    login    ", button_login},
+	[buttonLaunchBattle] = {{7, 9},  "launch battle", button_launch_battle},
+	[buttonQuitGame]     = {{7, 13},  "  quit game  ", button_quit_game},
 
 	// [buttonQuitBattle]   = {{7, 11},   "quit battle"},
 };
@@ -181,6 +204,13 @@ void show_cursor() {
 	printf("\033[?25h");
 }
 
+void init_scr_wh() {
+	struct winsize ws;
+	ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
+	scr_actual_w = ws.ws_col;
+	scr_actual_h = ws.ws_row;
+}
+
 void wrap_gets(char *buf, size_t len) {
 	do {
 		fgets(buf, len, stdin);
@@ -195,13 +225,30 @@ void wrap_gets(char *buf, size_t len) {
 	}
 }
 
-char *accept_input(const char *prompt) {
+void bottom_bar_output(const char *format, ...) {
 	set_cursor(1, SCR_H - 1);
-	return readline(prompt);
+	for(int i = 0; i < scr_actual_w; i++)
+		printf(" ");
+	set_cursor(1, SCR_H - 1);
+
+	va_list ap;
+	va_start(ap, format);
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+}
+
+char *accept_input(const char *prompt) {
+	show_cursor();
+	bottom_bar_output(prompt);
+	char *line = readline(NULL);
+	hide_cursor();
+	return line;
 }
 
 void resume_and_exit(int status) {
 	wrap_set_term_attr(&raw_termio);
+	set_cursor(1, SCR_H + 1);
+	show_cursor();
 	exit(status);
 }
 
@@ -212,7 +259,7 @@ int cmd_quit(char *args) {
 }
 
 int cmd_help(char *args) {
-	printf("%s", args);
+	bottom_bar_output("your args '%s'", args);
 	return 0;
 }
 
@@ -227,7 +274,6 @@ static struct {
 #define NR_HANDLER (sizeof(command_handler) / sizeof(command_handler[0]))
 
 void read_and_execute_command() {
-	show_cursor();
 	char *command = accept_input("command: ");
 	strtok(command, " \t");
 	char *args = strtok(NULL, " \t");
@@ -239,22 +285,30 @@ void read_and_execute_command() {
 		}
 	}
 
-	hide_cursor();
+	bottom_bar_output("invalid command '%s'", command);
 }
 
-void match_char(char ch) {
+int match_char(char ch) {
+	char cc;
 	echo_off();
 	disable_buffer();
-	while(fgetc(stdin) != ch);
+	do {
+		cc = fgetc(stdin);
+	} while(cc != '\n' && cc != ch);
 	enable_buffer();
 	echo_on();
+	return cc;
 }
 
 int switch_selected_button_respond_to_key(int st, int ed) {
 	int sel = st - 1;
 	int old_sel = sel;
 	while(1) {
-		match_char('\t');
+		int ch = match_char('\t');
+		if(ch == '\n' && st <= sel && sel < ed) {
+			return sel;
+		}
+
 		sel ++;
 
 		if(old_sel >= st && old_sel < ed)
@@ -271,14 +325,18 @@ int switch_selected_button_respond_to_key(int st, int ed) {
 }
 
 void main_menu() {
-	draw_button_in_main_menu();
-	switch_selected_button_respond_to_key(0, 3);
+	while(1) {
+		draw_button_in_main_menu();
+		int sel = switch_selected_button_respond_to_key(0, 3);
+		buttons[sel].button_func();
+	}
 }
 
 int main() {
 	// client_fd = connect_to_server();
 	system("clear");
 
+	init_scr_wh();
 	wrap_get_term_attr(&raw_termio);
 	hide_cursor();
 
