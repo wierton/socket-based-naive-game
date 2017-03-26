@@ -3,11 +3,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
-#include <readline/readline.h>
 
 #include "common.h"
 
-void bottom_bar_output(const char *format, ...);
+#define LINE_MAX_LEN 50
+
+char *readline();
+
+char *strdup(const char *s);
+
+void bottom_bar_output(int line, const char *format, ...);
 
 char *accept_input(const char *prompt);
 
@@ -18,8 +23,8 @@ static int scr_actual_h = 0;
 
 enum {
 	buttonLogin = 0,
-	buttonLaunchBattle = 1,
-	buttonQuitGame = 2,
+	buttonQuitGame = 1,
+	buttonLaunchBattle = 2,
 	buttonQuitBattle,
 };
 
@@ -29,7 +34,7 @@ static struct termio raw_termio;
 
 int button_login() {
 	char *name = accept_input("your name: ");
-	bottom_bar_output("register your name '%s' to server...", name);
+	bottom_bar_output(0, "register your name '%s' to server...", name);
 	return 0;
 }
 
@@ -47,9 +52,15 @@ struct button_t {
 	const char *s;
 	int (*button_func)();
 } buttons[] = {
-	[buttonLogin]        = {{7, 5}, "    login    ", button_login},
-	[buttonLaunchBattle] = {{7, 9},  "launch battle", button_launch_battle},
-	[buttonQuitGame]     = {{7, 13},  "  quit game  ", button_quit_game},
+	[buttonLogin]        = {
+		{24, 5}, "login", button_login,
+	},
+	[buttonQuitGame]     = {
+		{24, 13},  " quit", button_quit_game,
+	},
+	[buttonLaunchBattle] = {
+		{7, 9},  "launch battle", button_launch_battle,
+	},
 
 	// [buttonQuitBattle]   = {{7, 11},   "quit battle"},
 };
@@ -186,7 +197,6 @@ void draw_selected_button(uint32_t button_id) {
 }
 
 void draw_button_in_main_menu() {
-	draw_button(buttonLaunchBattle);
 	draw_button(buttonQuitGame);
 	draw_button(buttonLogin);
 }
@@ -211,25 +221,52 @@ void init_scr_wh() {
 	scr_actual_h = ws.ws_row;
 }
 
-void wrap_gets(char *buf, size_t len) {
-	do {
-		fgets(buf, len, stdin);
-	} while(buf[0] == '\n');
-
-	len = strlen(buf) - 1;
-
-	if(buf[len] == '\n'){
-		buf[len] = 0;
-	}else{
-		while(fgetc(stdin) != '\n');
+char *readline() {
+	char ch;
+	int line_ptr = 0;
+	char line[LINE_MAX_LEN];
+	memset(line, 0, sizeof(line));
+	echo_off();
+	disable_buffer();
+	while((ch = fgetc(stdin)) != '\n') {
+		switch(ch) {
+			case '\033':{
+				ch = fgetc(stdin);
+				ch = fgetc(stdin);
+				assert('A' <= ch && ch <= 'D');
+				break;
+			}
+			case '\b':{
+				// FIXME: echo
+				if(line_ptr > 0)
+					line_ptr --;
+				printf("\b \b");
+				break;
+			}
+			default: {
+				if(line_ptr < sizeof(line) - 1) {
+					line[line_ptr ++] = ch;
+					fputc(ch, stdout);
+					fflush(stdout);
+				}
+			}
+		}
 	}
+	enable_buffer();
+	echo_on();
+	return strdup(line);
 }
 
-void bottom_bar_output(const char *format, ...) {
-	set_cursor(1, SCR_H - 1);
+void display_user_state() {
+	bottom_bar_output(-1, "name:%s  HP:%d  state:%s", "wierton", 0, "not login");
+}
+
+void bottom_bar_output(int line, const char *format, ...) {
+	assert(line <= 0);
+	set_cursor(1, SCR_H - 1 + line);
 	for(int i = 0; i < scr_actual_w; i++)
 		printf(" ");
-	set_cursor(1, SCR_H - 1);
+	set_cursor(1, SCR_H - 1 + line);
 
 	va_list ap;
 	va_start(ap, format);
@@ -239,8 +276,8 @@ void bottom_bar_output(const char *format, ...) {
 
 char *accept_input(const char *prompt) {
 	show_cursor();
-	bottom_bar_output(prompt);
-	char *line = readline(NULL);
+	bottom_bar_output(0, prompt);
+	char *line = readline();
 	hide_cursor();
 	return line;
 }
@@ -259,7 +296,7 @@ int cmd_quit(char *args) {
 }
 
 int cmd_help(char *args) {
-	bottom_bar_output("your args '%s'", args);
+	bottom_bar_output(0, "your args '%s'", args);
 	return 0;
 }
 
@@ -285,7 +322,9 @@ void read_and_execute_command() {
 		}
 	}
 
-	bottom_bar_output("invalid command '%s'", command);
+	if(strlen(command) > 0) {
+		bottom_bar_output(0, "invalid command '%s'", command);
+	}
 }
 
 int match_char(char ch) {
@@ -327,7 +366,8 @@ int switch_selected_button_respond_to_key(int st, int ed) {
 void main_menu() {
 	while(1) {
 		draw_button_in_main_menu();
-		int sel = switch_selected_button_respond_to_key(0, 3);
+		display_user_state();
+		int sel = switch_selected_button_respond_to_key(0, 2);
 		buttons[sel].button_func();
 	}
 }
