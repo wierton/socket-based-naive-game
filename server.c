@@ -12,7 +12,6 @@
 
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t battles_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t battles_users_lock = PTHREAD_MUTEX_INITIALIZER;
 
 void wrap_recv(int conn, client_message_t *pcm);
 void wrap_send(int conn, server_message_t *psm);
@@ -290,18 +289,22 @@ int client_command_invite_user(int session_id) {
 
 int client_command_accept_battle(int session_id) {
 	sessions[session_id].state = USER_STATE_BATTLE;
+	log("user %s accept battle #%d\n", sessions[session_id].user_name, sessions[session_id].battle_id);
 
 	if(sessions[session_id].state == USER_STATE_BATTLE) {
+		logi("already in battle\n");
 		send_to_client(session_id, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
 	}else if(sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
 		int inviter_id = sessions[session_id].inviter_id;
 
+		logi("accept success\n");
 		server_message_t sm;
 		memset(&sm, 0, sizeof(server_message_t));
 		sm.message = SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE;
 		strncpy(sm.friend_name, sessions[inviter_id].user_name, USERNAME_SIZE - 1);
 		wrap_send(inviter_id, &sm);
 	}else{
+		logi("hasn't been invited\n");
 		send_to_client(session_id, SERVER_RESPONSE_NOBODY_INVITE_YOU);
 	}
 
@@ -309,14 +312,18 @@ int client_command_accept_battle(int session_id) {
 }
 
 int client_command_reject_battle(int session_id) {
+	log("user %s reject battle #%d\n", sessions[session_id].user_name, sessions[session_id].battle_id);
 	if(sessions[session_id].state == USER_STATE_BATTLE) {
+		logi("user already in battle\n");
 		send_to_client(session_id, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
 	}else if(sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
+		logi("reject success\n");
 		int battle_id = sessions[session_id].battle_id;
 		send_to_client(sessions[session_id].inviter_id, SERVER_RESPONSE_FRIEND_REJECT_BATTLE);
 		sessions[session_id].state = USER_STATE_LOGIN;
 		battles[battle_id].users[session_id].is_joined = false;
 	}else{
+		logi("hasn't been invited\n");
 		send_to_client(session_id, SERVER_RESPONSE_NOBODY_INVITE_YOU);
 	}
 	return 0;
@@ -475,7 +482,6 @@ int main() {
 
 	pthread_mutex_destroy(&sessions_lock);
 	pthread_mutex_destroy(&battles_lock);
-	pthread_mutex_destroy(&battles_users_lock);
 
 	return 0;
 }

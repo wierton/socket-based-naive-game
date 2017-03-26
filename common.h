@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -117,12 +118,14 @@
  */
 
 #define SCR_W 60
-#define SCR_H 40
+#define SCR_H 20
 
 #define USERNAME_SIZE  7
 #define USER_CNT   5
 
 #define MAX_ITEM 30
+
+#define PORT 50000
 
 enum {
 	CLIENT_COMMAND_USER_LOGIN,

@@ -5,8 +5,8 @@ all:server client
 server:server.c common.h
 	gcc -Wall -std=c11 server.c -o server -lpthread
 
-client:server.c common.h
-	echo compile client
+client:client.c common.h
+	gcc -Wall -std=c11 client.c -o client
 
 clean:
 	rm server client
