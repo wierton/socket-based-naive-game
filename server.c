@@ -147,6 +147,7 @@ int get_unused_session() {
 			memset(&sessions[i], 0, sizeof(struct session_t));
 			sessions[i].state = USER_STATE_NOT_LOGIN;
 			ret_session_id = i;
+			break;
 		}
 	}
 	pthread_mutex_unlock(&sessions_lock);

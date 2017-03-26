@@ -55,19 +55,19 @@
  * cursor move:
  *   control code: "\033"  (\033 is ascii code of <esc>)
  *
- *   cursor up:             "\033[{count}a"
+ *   cursor up:             "\033[{count}A"
  *		moves the cursor up by count rows;
  *		the default count is 1.
  *
- *	 cursor down:           "\033[{count}b"
+ *	 cursor down:           "\033[{count}B"
  *		moves the cursor down by count rows;
  *		the default count is 1.
  *
- *	 cursor forward:        "\033[{count}c"
+ *	 cursor forward:        "\033[{count}C"
  *		moves the cursor forward by count columns;
  *		the default count is 1.
  *
- *	 cursor backward:       "\033[{count}d"
+ *	 cursor backward:       "\033[{count}D"
  *		moves the cursor backward by count columns;
  *		the default count is 1.
  *
@@ -103,8 +103,8 @@
 #define loge(fmt, ...) \
 	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
 
-#define eprintf(fmt, ...) do { \
-	loge("\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__); \
+#define eprintf(...) do { \
+	loge(__VA_ARGS__); \
 	exit(0); \
 } while(0)
 
