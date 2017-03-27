@@ -160,30 +160,42 @@ int get_unused_session() {
 }
 
 int client_command_user_login(int session_id) {
-	int ret_code = 0;
+	int is_dup = 0;
 	int conn = sessions[session_id].conn;
 	client_message_t *pcm = &sessions[session_id].cm;
 	char *user_name = pcm->user_name;
-	log("user '%s' login\n", user_name);
+
+	if(query_session_built(session_id)) {
+		log("user '%s' has logined\n", sessions[session_id].user_name);
+		send_to_client(conn, SERVER_RESPONSE_YOU_HAVE_LOGINED);
+		return 0;
+	}
+
+
+	log("user '%s' try to login\n", user_name);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(query_session_built(i)) {
-			if(strncmp(user_name, sessions[i].user_name, USERNAME_SIZE) == 0) {
+			logi("check dup user id: '%s' vs. '%s'\n", user_name, sessions[i].user_name);
+			if(strncmp(user_name, sessions[i].user_name, USERNAME_SIZE - 1) == 0) {
 				log("user %d@%s duplicate with %dth user '%s'\n", session_id, user_name, i, sessions[i].user_name);
-				ret_code = -1;
+				is_dup = 1;
 				break;
 			}
 		}
 	}
 
 	// no duplicate user ids found
-	if(ret_code == -1) {
-		close_session(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
+	if(is_dup) {
+		send_to_client(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
+		sessions[session_id].state = USER_STATE_NOT_LOGIN;
 	}else{
+		log("user '%s' login success\n", user_name);
+		sessions[session_id].state = USER_STATE_LOGIN;
 		send_to_client(conn, SERVER_RESPONSE_LOGIN_SUCCESS);
 		strncpy(sessions[session_id].user_name, user_name, USERNAME_SIZE - 1);
 	}
 
-	return ret_code;
+	return 0;
 }
 
 int client_command_fetch_all_users(int session_id) {
@@ -330,12 +342,18 @@ int client_command_reject_battle(int session_id) {
 	return 0;
 }
 
-int client_command_logout(int session_id) {
+int client_command_quit(int session_id) {
 	int conn = sessions[session_id].conn;
-	log("user %d@%s logout\n", session_id, sessions[session_id].user_name);
+	log("user %d@%s quit\n", session_id, sessions[session_id].user_name);
 	sessions[session_id].state = USER_STATE_UNUSED;
 	close(conn);
 	return -1;
+}
+
+int client_command_logout(int session_id) {
+	log("user %d@%s logout\n", session_id, sessions[session_id].user_name);
+	sessions[session_id].state = USER_STATE_NOT_LOGIN;
+	return 0;
 }
 
 int client_command_move_up(int session_id) {
@@ -359,6 +377,7 @@ int client_command_fire(int session_id) {
 }
 
 static int(*handler[])(int) = {
+	[CLIENT_COMMAND_USER_QUIT] = client_command_quit,
 	[CLIENT_COMMAND_USER_LOGIN] = client_command_user_login,
 	[CLIENT_COMMAND_FETCH_ALL_USERS] = client_command_fetch_all_users,
 	[CLIENT_COMMAND_LAUNCH_BATTLE] = client_command_launch_battle,
@@ -419,6 +438,7 @@ void *session_start(void *args) {
 		sessions[session_id].conn = conn;
 		pcm = &sessions[session_id].cm;
 		memset(pcm, 0, sizeof(client_message_t));
+		log("build session #%d\n", session_id);
 	}
 
 	while(1) {
@@ -427,8 +447,10 @@ void *session_start(void *args) {
 			continue;
 
 		int ret_code = handler[pcm->command](session_id);
-		if(ret_code < 0)
+		if(ret_code < 0) {
+			log("close session #%d\n", session_id);
 			break;
+		}
 	}
 	return NULL;
 }

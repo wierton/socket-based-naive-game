@@ -8,6 +8,9 @@
 
 #define LINE_MAX_LEN 50
 
+static char *user_name = "<unknown>";
+static char *user_state = "not login";
+
 char *readline();
 
 char *strdup(const char *s);
@@ -17,6 +20,8 @@ void bottom_bar_output(int line, const char *format, ...);
 char *accept_input(const char *prompt);
 
 void resume_and_exit(int status);
+
+void display_user_state();
 
 static int scr_actual_w = 0;
 static int scr_actual_h = 0;
@@ -32,9 +37,70 @@ int client_fd = -1;
 
 static struct termio raw_termio;
 
+void wrap_send(client_message_t *pcm) {
+	size_t total_len = 0;
+	while(total_len < sizeof(client_message_t)) {
+		size_t len = send(client_fd, pcm + total_len, sizeof(client_message_t) - total_len, 0);
+		if(len < 0) {
+			loge("broken pipe\n");
+		}
+
+		total_len += len;
+	}
+}
+
+void wrap_recv(server_message_t *psm) {
+	size_t total_len = 0;
+	while(total_len < sizeof(server_message_t)) {
+		size_t len = recv(client_fd, psm + total_len, sizeof(server_message_t) - total_len, 0);
+		if(len < 0) {
+			loge("broken pipe\n");
+		}
+
+		total_len += len;
+	}
+}
+
+server_message_t *send_recv(client_message_t *pcm) {
+	static server_message_t sm;
+	wrap_send(pcm);
+	wrap_recv(&sm);
+	return &sm;
+}
+
+void send_command(int command) {
+	client_message_t cm;
+	cm.command = command;
+	wrap_send(&cm);
+}
+
 int button_login() {
 	char *name = accept_input("your name: ");
 	bottom_bar_output(0, "register your name '%s' to server...", name);
+
+	client_message_t cm;
+	memset(&cm, 0, sizeof(client_message_t));
+	cm.command = CLIENT_COMMAND_USER_LOGIN;
+	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
+	server_message_t *psm = send_recv(&cm);
+
+	if(psm->response == SERVER_RESPONSE_LOGIN_SUCCESS) {
+		user_name = name;
+		user_state = "login";
+		bottom_bar_output(0, "login success");
+		display_user_state();
+	}else if(psm->response == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID) {
+		user_state = "login fail";
+		bottom_bar_output(0, "you name has been registered!");
+		display_user_state();
+	}else if(psm->response == SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS) {
+		user_state = "login fail";
+		bottom_bar_output(0, "server fail");
+		display_user_state();
+	}else if(psm->response == SERVER_RESPONSE_YOU_HAVE_LOGINED) {
+		bottom_bar_output(0, "you have logined");
+	}
+
 	return 0;
 }
 
@@ -236,15 +302,9 @@ char *readline() {
 				assert('A' <= ch && ch <= 'D');
 				break;
 			}
-			case '\b':{
-				// FIXME: echo
-				if(line_ptr > 0)
-					line_ptr --;
-				printf("\b \b");
-				break;
-			}
 			default: {
-				if(line_ptr < sizeof(line) - 1) {
+				if(line_ptr < sizeof(line) - 1
+				&& 0x21 <= ch && ch < 0x80) {
 					line[line_ptr ++] = ch;
 					fputc(ch, stdout);
 					fflush(stdout);
@@ -252,13 +312,14 @@ char *readline() {
 			}
 		}
 	}
+	line[line_ptr] = 0;
 	enable_buffer();
 	echo_on();
 	return strdup(line);
 }
 
 void display_user_state() {
-	bottom_bar_output(-1, "name:%s  HP:%d  state:%s", "wierton", 0, "not login");
+	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, 0, user_state);
 }
 
 void bottom_bar_output(int line, const char *format, ...) {
@@ -283,14 +344,15 @@ char *accept_input(const char *prompt) {
 }
 
 void resume_and_exit(int status) {
+	send_command(CLIENT_COMMAND_USER_QUIT);
 	wrap_set_term_attr(&raw_termio);
 	set_cursor(1, SCR_H + 1);
 	show_cursor();
 	exit(status);
+	close(client_fd);
 }
 
 int cmd_quit(char *args) {
-	set_cursor(1, SCR_H + 1);
 	resume_and_exit(0);
 	return 0;
 }
@@ -372,9 +434,20 @@ void main_menu() {
 	}
 }
 
+void draw_button_in_login_menu() {
+}
+
+void login_menu() {
+	while(1) {
+		draw_button_in_login_menu();
+		int sel = switch_selected_button_respond_to_key(0, 2);
+		buttons[sel].button_func();
+	}
+}
+
 int main() {
-	// client_fd = connect_to_server();
 	system("clear");
+	client_fd = connect_to_server();
 
 	init_scr_wh();
 	wrap_get_term_attr(&raw_termio);
@@ -382,7 +455,6 @@ int main() {
 
 	flip_screen();
 	main_menu();
-	close(client_fd);
 
 	set_cursor(1, SCR_H + 1);
 	resume_and_exit(0);
