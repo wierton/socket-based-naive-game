@@ -7,7 +7,7 @@
 
 #include "common.h"
 
-#define LINE_MAX_LEN 50
+#define LINE_MAX_LEN 20
 
 #define wlog(fmt, ...) write_log("%d: " fmt, __LINE__, ## __VA_ARGS__)
 #define wlogi(fmt, ...) write_log("%d: ==> " fmt, __LINE__, ## __VA_ARGS__)
@@ -703,7 +703,11 @@ int serv_msg_friend_already_in_battle(server_message_t *psm) {
 
 int serv_msg_you_are_invited(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
-	server_say(sformat("friend %s invite you to his battle [y|n]?", psm->friend_name));
+	if(accept_yesno(sformat("friend %s invite you to his battle [y|n]?", psm->friend_name))) {
+		send_command(CLIENT_COMMAND_ACCEPT_BATTLE);
+	}else{
+		send_command(CLIENT_COMMAND_REJECT_BATTLE);
+	}
 	return 0;
 }
 

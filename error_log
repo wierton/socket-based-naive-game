@@ -1,0 +1,328 @@
+G] main:512: connected by 127.0.0.1:29852
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'akl' try to login
+[LOG] client_command_user_login:200: user 'akl' login success
+[LOG] client_command_user_login:177: user 'akl' has logined
+[LOG] client_command_quit:355: user 0@akl quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:36508
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'iaosd' try to login
+[LOG] client_command_user_login:200: user 'iaosd' login success
+[LOG] client_command_user_login:177: user 'iaosd' has logined
+[LOG] client_command_quit:355: user 0@iaosd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:60572
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_quit:355: user 0@asd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:3743
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_quit:355: user 0@asd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:8351
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'qwe' try to login
+[LOG] client_command_user_login:200: user 'qwe' login success
+[LOG] client_command_quit:355: user 0@qwe quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:12959
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_quit:355: user 0@asd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:15519
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_quit:355: user 0@asd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:26783
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_user_login:177: user 'asd' has logined
+[LOG] main:512: connected by 127.0.0.1:27807
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'asd' vs. 'asd'
+[LOG] client_command_user_login:188: user 1@asd duplicate with 0th user 'asd'
+[LOG] client_command_user_login:183: user ';;;;' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: ';;;;' vs. 'asd'
+[LOG] client_command_user_login:200: user ';;;;' login success
+[LOG] client_command_user_login:177: user ';;;;' has logined
+[LOG] get_unalloced_battle:145: alloc unalloced battle id #0
+[LOG] find_session_id_by_user_name:111: find user ';;;;'
+[LOG] find_session_id_by_user_name:124: ==> found: 1@;;;;
+[LOG] client_command_launch_battle:269: asd launch battle with ;;;;
+[LOG] client_command_launch_battle:278: ==> launch battle 0 for asd, invite ;;;;
+[LOG] invite_friend_to_battle:240: ==> friend 1@';;;;' found
+[LOG] user_join_battle_common_part:61: user asd join in battle 0(0 users)
+[LOG] user_join_battle_common_part:61: user ;;;; join in battle 0(1 users)
+[LOG] client_command_quit:355: user 1@;;;; quit
+[LOG] session_start:465: close session #1
+[LOG] client_command_logout:364: user 0@asd trys to logout was in battle
+[LOG] user_quit_battle:70: user asd quit from battle 0(2 users)
+[LOG] client_command_logout:368: user 0@asd logout
+[LOG] client_command_quit:355: user 0@asd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:40607
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] main:512: connected by 127.0.0.1:42143
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'Aalic' try to login
+[LOG] client_command_user_login:200: user 'Aalic' login success
+[LOG] client_command_user_login:183: user 'bob' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'bob' vs. 'Aalic'
+[LOG] client_command_user_login:200: user 'bob' login success
+[LOG] client_command_quit:355: user 1@bob quit
+[LOG] session_start:465: close session #1
+[LOG] main:512: connected by 127.0.0.1:45727
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'bob' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'bob' vs. 'Aalic'
+[LOG] client_command_user_login:200: user 'bob' login success
+[LOG] client_command_quit:355: user 1@bob quit
+[LOG] session_start:465: close session #1
+[LOG] main:512: connected by 127.0.0.1:59552
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'aa' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'aa' vs. 'Aalic'
+[LOG] client_command_user_login:200: user 'aa' login success
+[LOG] client_command_user_login:177: user 'aa' has logined
+[LOG] client_command_quit:355: user 0@Aalic quit
+[LOG] session_start:465: close session #0
+[LOG] client_command_logout:368: user 1@aa logout
+[LOG] client_command_quit:355: user 1@aa quit
+[LOG] session_start:465: close session #1
+[LOG] main:512: connected by 127.0.0.1:25764
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'qwe' try to login
+[LOG] client_command_user_login:200: user 'qwe' login success
+[LOG] client_command_user_login:177: user 'qwe' has logined
+[LOG] get_unalloced_battle:145: alloc unalloced battle id #1
+[LOG] find_session_id_by_user_name:111: find user ''
+[LOG] find_session_id_by_user_name:122: ==> fail
+[LOG] client_command_launch_battle:269: qwe launch battle with
+[LOG] client_command_launch_battle:278: ==> launch battle 1 for qwe, invite
+[LOG] invite_friend_to_battle:234: ==> friend '' hasn't login
+[LOG] client_command_logout:368: user 0@qwe logout
+[LOG] client_command_quit:355: user 0@qwe quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:26788
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'qwf' try to login
+[LOG] client_command_user_login:200: user 'qwf' login success
+[LOG] client_command_user_login:177: user 'qwf' has logined
+[LOG] get_unalloced_battle:145: alloc unalloced battle id #2
+[LOG] find_session_id_by_user_name:111: find user ''
+[LOG] find_session_id_by_user_name:122: ==> fail
+[LOG] client_command_launch_battle:269: qwf launch battle with
+[LOG] client_command_launch_battle:278: ==> launch battle 2 for qwf, invite
+[LOG] invite_friend_to_battle:234: ==> friend '' hasn't login
+[LOG] client_command_logout:368: user 0@qwf logout
+[LOG] client_command_quit:355: user 0@qwf quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:55972
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_user_login:177: user 'asd' has logined
+[LOG] client_command_logout:368: user 0@asd logout
+[LOG] client_command_quit:355: user 0@asd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:58532
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_user_login:177: user 'asd' has logined
+[LOG] client_command_logout:368: user 0@asd logout
+[LOG] client_command_user_login:183: user 'asd' try to login
+[LOG] client_command_user_login:200: user 'asd' login success
+[LOG] client_command_user_login:177: user 'asd' has logined
+[LOG] client_command_logout:368: user 0@asd logout
+[LOG] client_command_quit:355: user 0@asd quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:59556
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:200: user 'as' login success
+[LOG] client_command_user_login:177: user 'as' has logined
+[LOG] client_command_logout:368: user 0@as logout
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:200: user 'as' login success
+[LOG] client_command_quit:355: user 0@as quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:1189
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:200: user 'as' login success
+[LOG] main:512: connected by 127.0.0.1:2725
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'as' vs. 'as'
+[LOG] client_command_user_login:188: user 1@as duplicate with 0th user 'as'
+[LOG] client_command_user_login:183: user 'kl' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'kl' vs. 'as'
+[LOG] client_command_user_login:200: user 'kl' login success
+[LOG] get_unalloced_battle:145: alloc unalloced battle id #3
+[LOG] find_session_id_by_user_name:111: find user 'kl'
+[LOG] find_session_id_by_user_name:124: ==> found: 1@kl
+[LOG] client_command_launch_battle:269: as launch battle with kl
+[LOG] client_command_launch_battle:278: ==> launch battle 3 for as, invite kl
+[LOG] invite_friend_to_battle:240: ==> friend 1@'kl' found
+[LOG] user_join_battle_common_part:61: user as join in battle 3(0 users)
+[LOG] user_join_battle_common_part:61: user kl join in battle 3(1 users)
+[LOG] client_command_logout:364: user 0@as trys to logout was in battle
+[LOG] user_quit_battle:70: user as quit from battle 3(2 users)
+[LOG] client_command_logout:368: user 0@as logout
+[LOG] client_command_quit:355: user 0@as quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:14501
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'as' vs. 'kl'
+[LOG] client_command_user_login:200: user 'as' login success
+[LOG] client_command_quit:355: user 0@as quit
+[LOG] session_start:465: close session #0
+[LOG] client_command_logout:364: user 1@kl trys to logout was in battle
+[LOG] user_quit_battle:70: user kl quit from battle 0(1 users)
+[LOG] client_command_logout:368: user 1@kl logout
+[LOG] client_command_quit:355: user 1@kl quit
+[LOG] session_start:465: close session #1
+[LOG] main:512: connected by 127.0.0.1:15525
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:200: user 'as' login success
+[LOG] client_command_user_login:177: user 'as' has logined
+[LOG] client_command_logout:368: user 0@as logout
+[LOG] client_command_quit:355: user 0@as quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:20133
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:200: user 'as' login success
+[LOG] client_command_user_login:177: user 'as' has logined
+[LOG] client_command_logout:368: user 0@as logout
+[LOG] client_command_quit:355: user 0@as quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:22693
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:200: user 'as' login success
+[LOG] main:512: connected by 127.0.0.1:23205
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'qwaaa' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'qwaaa' vs. 'as'
+[LOG] client_command_user_login:200: user 'qwaaa' login success
+[LOG] client_command_logout:368: user 1@qwaaa logout
+[LOG] client_command_quit:355: user 1@qwaaa quit
+[LOG] session_start:465: close session #1
+[LOG] main:512: connected by 127.0.0.1:24229
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'as' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'as' vs. 'as'
+[LOG] client_command_user_login:188: user 1@as duplicate with 0th user 'as'
+[LOG] client_command_user_login:183: user 'qw' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'qw' vs. 'as'
+[LOG] client_command_user_login:200: user 'qw' login success
+[LOG] get_unalloced_battle:145: alloc unalloced battle id #0
+[LOG] find_session_id_by_user_name:111: find user 'as'
+[LOG] find_session_id_by_user_name:124: ==> found: 0@as
+[LOG] client_command_launch_battle:269: qw launch battle with as
+[LOG] client_command_launch_battle:278: ==> launch battle 0 for qw, invite as
+[LOG] invite_friend_to_battle:240: ==> friend 0@'as' found
+[LOG] user_join_battle_common_part:61: user qw join in battle 0(0 users)
+[LOG] user_join_battle_common_part:61: user as join in battle 0(1 users)
+[LOG] client_command_logout:364: user 1@qw trys to logout was in battle
+[LOG] user_quit_battle:70: user qw quit from battle 0(2 users)
+[LOG] client_command_logout:368: user 1@qw logout
+[LOG] client_command_quit:355: user 1@qw quit
+[LOG] session_start:465: close session #1
+[LOG] client_command_logout:364: user 0@as trys to logout was in battle
+[LOG] user_quit_battle:70: user as quit from battle 0(1 users)
+[LOG] client_command_logout:368: user 0@as logout
+[LOG] client_command_quit:355: user 0@as quit
+[LOG] session_start:465: close session #0
+[LOG] main:512: connected by 127.0.0.1:22695
+[LOG] get_unused_session:165: alloc unused session id #0
+[LOG] session_start:455: build session #0
+[LOG] client_command_user_login:183: user 'aaaaaa' try to login
+[LOG] client_command_user_login:200: user 'aaaaaa' login success
+[LOG] main:512: connected by 127.0.0.1:55975
+[LOG] get_unused_session:165: alloc unused session id #1
+[LOG] session_start:455: build session #1
+[LOG] client_command_user_login:183: user 'alice' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'alice' vs. 'aaaaaa'
+[LOG] client_command_user_login:200: user 'alice' login success
+[LOG] get_unalloced_battle:145: alloc unalloced battle id #0
+[LOG] find_session_id_by_user_name:111: find user 'aaaaa'
+[LOG] find_session_id_by_user_name:122: ==> fail
+[LOG] client_command_launch_battle:269: alice launch battle with aaaaa
+[LOG] client_command_launch_battle:278: ==> launch battle 0 for alice, invite aaaaa
+[LOG] invite_friend_to_battle:234: ==> friend '' hasn't login
+[LOG] client_command_logout:368: user 1@alice logout
+[LOG] client_command_user_login:183: user 'alice' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'alice' vs. 'aaaaaa'
+[LOG] client_command_user_login:200: user 'alice' login success
+[LOG] client_command_logout:368: user 0@aaaaaa logout
+[LOG] client_command_user_login:183: user 'bob' try to login
+[LOG] client_command_user_login:186: ==> check dup user id: 'bob' vs. 'alice'
+[LOG] client_command_user_login:200: user 'bob' login success
+[LOG] get_unalloced_battle:145: alloc unalloced battle id #4
+[LOG] find_session_id_by_user_name:111: find user 'bob'
+[LOG] find_session_id_by_user_name:124: ==> found: 0@bob
+[LOG] client_command_launch_battle:269: alice launch battle with bob
+[LOG] client_command_launch_battle:278: ==> launch battle 4 for alice, invite bob
+[LOG] invite_friend_to_battle:240: ==> friend 0@'bob' found
+[LOG] user_join_battle_common_part:61: user alice join in battle 4(0 users)
+[LOG] user_join_battle_common_part:61: user bob join in battle 4(1 users)
+[ERROR] get_unalloced_battle:143: check here, returned battle id should not be -1
+[LOG] find_session_id_by_user_name:111: find user ''
+[LOG] find_session_id_by_user_name:122: ==> fail
+[LOG] client_command_launch_battle:269: bob launch battle with
+[ERROR] client_command_launch_battle:272: fail to create battle for bob and
+[ERROR] get_unalloced_battle:143: check here, returned battle id should not be -1
+[LOG] find_session_id_by_user_name:111: find user ''
+[LOG] find_session_id_by_user_name:122: ==> fail
+[LOG] client_command_launch_battle:269: bob launch battle with
+[ERROR] client_command_launch_battle:272: fail to create battle for bob and
+[LOG] client_command_logout:364: user 1@alice trys to logout was in battle
+[LOG] user_quit_battle:70: user alice quit from battle 4(2 users)
+[LOG] client_command_logout:368: user 1@alice logout
+[LOG] client_command_quit:355: user 1@alice quit
+[LOG] session_start:465: close session #1
+
+
+
