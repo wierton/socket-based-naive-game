@@ -8,14 +8,28 @@
 
 #define LINE_MAX_LEN 50
 
+static int scr_actual_w = 0;
+static int scr_actual_h = 0;
+
 static char *user_name = "<unknown>";
 static char *user_state = "not login";
+
+static int client_fd = -1;
+
+static struct termio raw_termio;
+
+static char *server_addr = "127.0.0.1";
+
 
 char *readline();
 
 char *strdup(const char *s);
 
 void bottom_bar_output(int line, const char *format, ...);
+
+void server_say(const char *message);
+
+void tiny_debug(const char *output);
 
 char *accept_input(const char *prompt);
 
@@ -29,21 +43,26 @@ void draw_button_in_start_ui();
 
 void flip_screen();
 
-static int scr_actual_w = 0;
-static int scr_actual_h = 0;
+int connect_to_server() {
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-enum {
-	buttonLogin = 0,
-	buttonQuitGame = 1,
-	buttonLaunchBattle = 2,
-	buttonInviteUser = 3,
-	buttonJoinBattle = 4,
-	buttonLogout = 5,
-};
+	if(sockfd < 0) {
+		eprintf("Create Socket Failed!\n");
+	}
 
-int client_fd = -1;
+	struct sockaddr_in servaddr;
+	memset(&servaddr, 0, sizeof(servaddr));
 
-static struct termio raw_termio;
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons(PORT);
+	servaddr.sin_addr.s_addr = inet_addr(server_addr);
+
+	if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
+		eprintf("Can Not Connect To Server %s!\n", server_addr);
+	}
+
+	return sockfd;
+}
 
 void wrap_send(client_message_t *pcm) {
 	size_t total_len = 0;
@@ -82,6 +101,16 @@ void send_command(int command) {
 	wrap_send(&cm);
 }
 
+/* all buttons */
+enum {
+	buttonLogin = 0,
+	buttonQuitGame = 1,
+	buttonLaunchBattle = 2,
+	buttonInviteUser = 3,
+	buttonJoinBattle = 4,
+	buttonLogout = 5,
+};
+
 int button_login() {
 	char *name = accept_input("your name: ");
 	bottom_bar_output(0, "register your name '%s' to server...", name);
@@ -96,7 +125,7 @@ int button_login() {
 		user_name = name;
 		user_state = "login";
 		flip_screen();
-		bottom_bar_output(0, "login success");
+		server_say("welcome to simple net-based game");
 		display_user_state();
 		main_ui();
 		flip_screen();
@@ -104,14 +133,14 @@ int button_login() {
 		draw_button_in_start_ui();
 	}else if(psm->response == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID) {
 		user_state = "login fail";
-		bottom_bar_output(0, "you name has been registered!");
+		server_say("your name has been registered!");
 		display_user_state();
 	}else if(psm->response == SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS) {
 		user_state = "login fail";
-		bottom_bar_output(0, "server fail");
+		server_say("server fail");
 		display_user_state();
 	}else if(psm->response == SERVER_RESPONSE_YOU_HAVE_LOGINED) {
-		bottom_bar_output(0, "you have logined");
+		server_say("you have logined");
 	}
 
 	return 0;
@@ -138,9 +167,11 @@ int button_logout() {
 	user_name = "<unknown>";
 	user_state = "not login";
 	send_command(CLIENT_COMMAND_LOGOUT);
+	bottom_bar_output(0, "logout");
 	return -1;
 }
 
+/* button position and handler */
 struct button_t {
 	pos_t pos;
 	const char *s;
@@ -168,29 +199,6 @@ struct button_t {
 	// [buttonQuitBattle]   = {{7, 11},   "quit battle"},
 };
 
-static char *server_addr = "127.0.0.1";
-
-int connect_to_server() {
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-	if(sockfd < 0) {
-		eprintf("Create Socket Failed!\n");
-	}
-
-	struct sockaddr_in servaddr;
-	memset(&servaddr, 0, sizeof(servaddr));
-
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(PORT);
-	servaddr.sin_addr.s_addr = inet_addr(server_addr);
-
-	if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
-		eprintf("Can Not Connect To Server %s!\n", server_addr);
-	}
-
-	return sockfd;
-}
-
 void wrap_get_term_attr(struct termio *ptbuf) {
 	if(ioctl(0, TCGETA, ptbuf) == -1) {
 		eprintf("fail to get terminal information\n");
@@ -203,6 +211,7 @@ void wrap_set_term_attr(struct termio *ptbuf) {
 	}
 }
 
+/* functions to change terminal state */
 void disable_buffer() {
 	struct termio tbuf;
 	wrap_get_term_attr(&tbuf);
@@ -245,9 +254,158 @@ void set_cursor(uint32_t x, uint32_t y) {
 	printf("\033[%d;%df", y, x);
 }
 
+void hide_cursor() {
+	printf("\033[?25l");
+}
+
+void show_cursor() {
+	printf("\033[?25h");
+}
+
+void init_scr_wh() {
+	struct winsize ws;
+	ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
+	scr_actual_w = ws.ws_col;
+	scr_actual_h = ws.ws_row;
+}
+
+/* functions to maintain bar */
+char *readline() {
+	char ch;
+	int line_ptr = 0;
+	char line[LINE_MAX_LEN];
+	memset(line, 0, sizeof(line));
+	echo_off();
+	disable_buffer();
+	while((ch = fgetc(stdin)) != '\n') {
+		switch(ch) {
+			case '\033':{
+				ch = fgetc(stdin);
+				ch = fgetc(stdin);
+				assert('A' <= ch && ch <= 'D');
+				break;
+			}
+			default: {
+				if(line_ptr < sizeof(line) - 1
+				&& 0x20 <= ch && ch < 0x80) {
+					line[line_ptr ++] = ch;
+					fputc(ch, stdout);
+					fflush(stdout);
+				}
+			}
+		}
+	}
+	line[line_ptr] = 0;
+	enable_buffer();
+	echo_on();
+	return strdup(line);
+}
+
+char *sformat(const char *format, ...) {
+	static char text[100];
+
+	va_list ap;
+	va_start(ap, format);
+	int len = vsprintf(text, format, ap);
+	va_end(ap);
+
+	if(len >= sizeof(text))
+		eprintf("buffer overflow\n");
+
+	return text;
+}
+
+void bottom_bar_output(int line, const char *format, ...) {
+	assert(line <= 0);
+	set_cursor(1, SCR_H - 1 + line);
+	for(int i = 0; i < scr_actual_w; i++)
+		printf(" ");
+	set_cursor(1, SCR_H - 1 + line);
+
+	va_list ap;
+	va_start(ap, format);
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+}
+
+void display_user_state() {
+	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, 0, user_state);
+}
+
+void server_say(const char *message) {
+	bottom_bar_output(0, "\033[1;37m[%s]\033[0m %s", "server", message);
+}
+
+void tiny_debug(const char *output) {
+	bottom_bar_output(0, "\033[1;34m[%s]\033[0m %s", "DEBUG", output);
+}
+
+char *accept_input(const char *prompt) {
+	show_cursor();
+	bottom_bar_output(0, prompt);
+	char *line = readline();
+	hide_cursor();
+	return line;
+}
+
+void resume_and_exit(int status) {
+	send_command(CLIENT_COMMAND_USER_QUIT);
+	wrap_set_term_attr(&raw_termio);
+	set_cursor(1, SCR_H + 1);
+	show_cursor();
+	exit(status);
+	close(client_fd);
+}
+
+/* command handler */
+int cmd_quit(char *args) {
+	resume_and_exit(0);
+	return 0;
+}
+
+int cmd_help(char *args) {
+	if(args) {
+		if(strcmp(args, "--list") == 0) {
+			bottom_bar_output(0, "quit, help");
+		}else{
+			bottom_bar_output(0, "no help for '%s'", args);
+		}
+	}else{
+		bottom_bar_output(0, "usage: help [--list|command]");
+	}
+	return 0;
+}
+
+static struct {
+	const char *cmd;
+	int	(*func)(char *args);
+} command_handler[] = {
+	{"quit", cmd_quit},
+	{"help", cmd_help},
+};
+
+#define NR_HANDLER (sizeof(command_handler) / sizeof(command_handler[0]))
+
+void read_and_execute_command() {
+	char *command = accept_input("command: ");
+	strtok(command, " \t");
+	char *args = strtok(NULL, " \t");
+
+	for(int i = 0; i < NR_HANDLER; i++) {
+		if(strcmp(command, command_handler[i].cmd) == 0) {
+			command_handler[i].func(args);
+			return;
+		}
+	}
+
+	if(strlen(command) > 0) {
+		bottom_bar_output(0, "invalid command '%s'", command);
+	}
+}
+
 void flip_screen() {
 	set_cursor(0, 0);
-	for(int i = 0; i < SCR_H; i++) {
+	for(int i = 0; i < SCR_H - 2; i++) {
 		for(int j = 0; j < SCR_W; j++) {
 			printf(" ");
 		}
@@ -299,132 +457,6 @@ void draw_selected_button(uint32_t button_id) {
 	printf("\033[0m");
 }
 
-void draw_button_in_start_ui() {
-	draw_button(buttonQuitGame);
-	draw_button(buttonLogin);
-}
-
-void command_bar(const char *string) {
-	set_cursor(1, SCR_H - 1);
-	printf("%s", string);
-}
-
-void hide_cursor() {
-	printf("\033[?25l");
-}
-
-void show_cursor() {
-	printf("\033[?25h");
-}
-
-void init_scr_wh() {
-	struct winsize ws;
-	ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
-	scr_actual_w = ws.ws_col;
-	scr_actual_h = ws.ws_row;
-}
-
-char *readline() {
-	char ch;
-	int line_ptr = 0;
-	char line[LINE_MAX_LEN];
-	memset(line, 0, sizeof(line));
-	echo_off();
-	disable_buffer();
-	while((ch = fgetc(stdin)) != '\n') {
-		switch(ch) {
-			case '\033':{
-				ch = fgetc(stdin);
-				ch = fgetc(stdin);
-				assert('A' <= ch && ch <= 'D');
-				break;
-			}
-			default: {
-				if(line_ptr < sizeof(line) - 1
-				&& 0x21 <= ch && ch < 0x80) {
-					line[line_ptr ++] = ch;
-					fputc(ch, stdout);
-					fflush(stdout);
-				}
-			}
-		}
-	}
-	line[line_ptr] = 0;
-	enable_buffer();
-	echo_on();
-	return strdup(line);
-}
-
-void display_user_state() {
-	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, 0, user_state);
-}
-
-void bottom_bar_output(int line, const char *format, ...) {
-	assert(line <= 0);
-	set_cursor(1, SCR_H - 1 + line);
-	for(int i = 0; i < scr_actual_w; i++)
-		printf(" ");
-	set_cursor(1, SCR_H - 1 + line);
-
-	va_list ap;
-	va_start(ap, format);
-	vfprintf(stdout, format, ap);
-	va_end(ap);
-}
-
-char *accept_input(const char *prompt) {
-	show_cursor();
-	bottom_bar_output(0, prompt);
-	char *line = readline();
-	hide_cursor();
-	return line;
-}
-
-void resume_and_exit(int status) {
-	send_command(CLIENT_COMMAND_USER_QUIT);
-	wrap_set_term_attr(&raw_termio);
-	set_cursor(1, SCR_H + 1);
-	show_cursor();
-	exit(status);
-	close(client_fd);
-}
-
-int cmd_quit(char *args) {
-	resume_and_exit(0);
-	return 0;
-}
-
-int cmd_help(char *args) {
-	bottom_bar_output(0, "your args '%s'", args);
-	return 0;
-}
-
-static struct {
-	const char *cmd;
-	int	(*func)(char *args);
-} command_handler[] = {
-	{"quit", cmd_quit},
-	{"help", cmd_help},
-};
-
-#define NR_HANDLER (sizeof(command_handler) / sizeof(command_handler[0]))
-
-void read_and_execute_command() {
-	char *command = accept_input("command: ");
-	strtok(command, " \t");
-	char *args = strtok(NULL, " \t");
-
-	for(int i = 0; i < NR_HANDLER; i++) {
-		if(strcmp(command, command_handler[i].cmd) == 0) {
-			command_handler[i].func(args);
-			break;
-		}
-	}
-
-	if(strlen(command) > 0) {
-		bottom_bar_output(0, "invalid command '%s'", command);
-	}
-}
 
 int match_char(char ch) {
 	char cc;
@@ -460,6 +492,11 @@ int switch_selected_button_respond_to_key(int st, int ed) {
 		draw_selected_button(sel);
 		old_sel = sel;
 	}
+}
+
+void draw_button_in_start_ui() {
+	draw_button(buttonQuitGame);
+	draw_button(buttonLogin);
 }
 
 void start_ui() {

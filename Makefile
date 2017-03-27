@@ -1,4 +1,4 @@
-.PHONY:run-client run-server clean
+.PHONY:run-client run-server clean tmp
 
 all:server client
 
@@ -13,3 +13,7 @@ clean:
 
 run-client:server client
 	./client
+
+tmp:
+	echo $(CFILES)
+	echo $(filter,./front/front-main.c,$(CFILES))
