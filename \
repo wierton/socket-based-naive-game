@@ -9,8 +9,8 @@
 
 #define LINE_MAX_LEN 50
 
-#define wlog(fmt, ...) write_log("%d: " fmt, __LINE__, ## __VA_ARGS__)
-#define wlogi(fmt, ...) write_log("%d: ==> " fmt, __LINE__, ## __VA_ARGS__)
+#define wlog(fmt) write_log("%d: " fmt, __LINE__, ## __VA_ARGS__)
+#define wlogi(fmt) write_log("%d: ==> " fmt, __LINE__, ## __VA_ARGS__)
 
 static int scr_actual_w = 0;
 static int scr_actual_h = 0;
@@ -29,7 +29,6 @@ static struct termio raw_termio;
 
 static char *server_addr = "127.0.0.1";
 
-static int global_serv_message = -1;
 
 pthread_mutex_t cursor_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -138,17 +137,7 @@ int button_login() {
 	cm.command = CLIENT_COMMAND_USER_LOGIN;
 	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
 	wlogi("send login message to server\n");
-	global_serv_message = -1;
 	wrap_send(&cm);
-
-	do {
-		if(global_serv_message == SERVER_RESPONSE_LOGIN_SUCCESS
-		|| global_serv_message == SERVER_RESPONSE_YOU_HAVE_LOGINED
-		|| global_serv_message == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
-		|| global_serv_message == SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS)
-			break;
-	} while(1);
-	wlog("wait until message=%d\n", global_serv_message);
 
 	wlogi("set user name to '%s'\n", name);
 	user_name = name;
@@ -425,10 +414,8 @@ void resume_and_exit(int status) {
 	wrap_set_term_attr(&raw_termio);
 	set_cursor(1, SCR_H + 1);
 	show_cursor();
-	close(client_fd);
-	wlog("========================EXIT=======================\n");
-	wlog("\n\n");
 	exit(status);
+	close(client_fd);
 }
 
 /* command handler */
@@ -478,7 +465,6 @@ void read_and_execute_command() {
 }
 
 void flip_screen() {
-	pthread_mutex_lock(&cursor_lock);
 	set_cursor(0, 0);
 	for(int i = 0; i < SCR_H - 2; i++) {
 		for(int j = 0; j < SCR_W; j++) {
@@ -486,8 +472,6 @@ void flip_screen() {
 		}
 		printf("\n");
 	}
-
-	pthread_mutex_unlock(&cursor_lock);
 }
 
 void draw_button(uint32_t button_id) {
@@ -561,29 +545,30 @@ int switch_selected_button_respond_to_key(int st, int ed) {
 	int old_sel = sel;
 	wlog("enter select button, [%d, %d)\n", st, ed);
 	while(1) {
+		wlog("==> erase until key '\\t'\n");
 		int ch = match_char('\t');
 		if(ch == '\n' && st <= sel && sel < ed) {
-			break;
+			return sel;
 		}
 
+		wlog("==> sel:%d\n", sel);
 		sel ++;
 
 		if(old_sel >= st && old_sel < ed) {
+			wlog("==> endark button '%s'\n", buttons[old_sel].s);
 			draw_button(old_sel);
 		}
 
 		if(sel == ed) {
-			wlog("sel_menu enter command mode\n");
+			wlog("==> enter comand mod\n");
 			read_and_execute_command();
 			sel = st;
 		}
 
+		wlog("light button '%s'\n", buttons[sel].s);
 		draw_selected_button(sel);
 		old_sel = sel;
 	}
-
-	wlogi("return sel: %d\n", sel);
-	return sel;
 }
 
 void draw_button_in_main_ui() {
@@ -597,7 +582,6 @@ void main_ui() {
 	flip_screen();
 	while(1) {
 		draw_button_in_main_ui();
-		display_user_state();
 		int sel = switch_selected_button_respond_to_key(2, 6);
 		wlog("user select %d\n", sel);
 
@@ -605,7 +589,6 @@ void main_ui() {
 		wlog("button handler return %d\n", ret_code);
 
 		if(ret_code < 0 || user_state == USER_STATE_NOT_LOGIN) {
-			flip_screen();
 			wlog("quit main ui with user_state:%d\n", user_state);
 			break;
 		}
@@ -780,9 +763,6 @@ void *message_monitor(void *args) {
 			wlog("==> call message handler\n");
 			recv_msg_func[sm.message](&sm);
 		}
-
-		// delay assignment
-		global_serv_message = sm.message;
 	}
 	return NULL;
 }
@@ -795,7 +775,6 @@ void start_message_monitor() {
 }
 
 int main() {
-	wlog("=========================START======================\n");
 	client_fd = connect_to_server();
 
 	system("clear");

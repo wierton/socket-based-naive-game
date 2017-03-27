@@ -11,6 +11,9 @@ client:client.c common.h
 clean:
 	rm server client
 
+run-server:server client
+	./server
+
 run-client:server client
 	./client
 
