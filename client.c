@@ -23,6 +23,12 @@ void resume_and_exit(int status);
 
 void display_user_state();
 
+void main_ui();
+
+void draw_button_in_start_ui();
+
+void flip_screen();
+
 static int scr_actual_w = 0;
 static int scr_actual_h = 0;
 
@@ -30,7 +36,9 @@ enum {
 	buttonLogin = 0,
 	buttonQuitGame = 1,
 	buttonLaunchBattle = 2,
-	buttonQuitBattle,
+	buttonInviteUser = 3,
+	buttonJoinBattle = 4,
+	buttonLogout = 5,
 };
 
 int client_fd = -1;
@@ -87,8 +95,13 @@ int button_login() {
 	if(psm->response == SERVER_RESPONSE_LOGIN_SUCCESS) {
 		user_name = name;
 		user_state = "login";
+		flip_screen();
 		bottom_bar_output(0, "login success");
 		display_user_state();
+		main_ui();
+		flip_screen();
+		display_user_state();
+		draw_button_in_start_ui();
 	}else if(psm->response == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID) {
 		user_state = "login fail";
 		bottom_bar_output(0, "you name has been registered!");
@@ -104,13 +117,28 @@ int button_login() {
 	return 0;
 }
 
+int button_quit_game() {
+	resume_and_exit(0);
+	return 0;
+}
+
 int button_launch_battle() {
 	return 0;
 }
 
-int button_quit_game() {
-	resume_and_exit(0);
+int button_invite_user() {
 	return 0;
+}
+
+int button_join_battle() {
+	return 0;
+}
+
+int button_logout() {
+	user_name = "<unknown>";
+	user_state = "not login";
+	send_command(CLIENT_COMMAND_LOGOUT);
+	return -1;
 }
 
 struct button_t {
@@ -125,7 +153,16 @@ struct button_t {
 		{24, 13},  " quit", button_quit_game,
 	},
 	[buttonLaunchBattle] = {
-		{7, 9},  "launch battle", button_launch_battle,
+		{7, 3},  "launch battle", button_launch_battle,
+	},
+	[buttonInviteUser] = {
+		{7, 7},  " invite user ", button_invite_user,
+	},
+	[buttonJoinBattle] = {
+		{7, 11}, " join battle ", button_join_battle,
+	},
+	[buttonLogout] = {
+		{7, 15}, "    logout   ", button_logout,
 	},
 
 	// [buttonQuitBattle]   = {{7, 11},   "quit battle"},
@@ -262,7 +299,7 @@ void draw_selected_button(uint32_t button_id) {
 	printf("\033[0m");
 }
 
-void draw_button_in_main_menu() {
+void draw_button_in_start_ui() {
 	draw_button(buttonQuitGame);
 	draw_button(buttonLogin);
 }
@@ -425,23 +462,31 @@ int switch_selected_button_respond_to_key(int st, int ed) {
 	}
 }
 
-void main_menu() {
+void start_ui() {
 	while(1) {
-		draw_button_in_main_menu();
+		draw_button_in_start_ui();
 		display_user_state();
 		int sel = switch_selected_button_respond_to_key(0, 2);
 		buttons[sel].button_func();
 	}
 }
 
-void draw_button_in_login_menu() {
+void draw_button_in_main_ui() {
+	draw_button(buttonLaunchBattle);
+	draw_button(buttonInviteUser);
+	draw_button(buttonJoinBattle);
+	draw_button(buttonLogout);
 }
 
-void login_menu() {
+void main_ui() {
 	while(1) {
-		draw_button_in_login_menu();
-		int sel = switch_selected_button_respond_to_key(0, 2);
-		buttons[sel].button_func();
+		draw_button_in_main_ui();
+		int sel = switch_selected_button_respond_to_key(2, 6);
+		int ret_code = buttons[sel].button_func();
+
+		if(ret_code < 0) {
+			break;
+		}
 	}
 }
 
@@ -454,7 +499,7 @@ int main() {
 	hide_cursor();
 
 	flip_screen();
-	main_menu();
+	start_ui();
 
 	set_cursor(1, SCR_H + 1);
 	resume_and_exit(0);
