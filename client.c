@@ -33,6 +33,8 @@ void tiny_debug(const char *output);
 
 char *accept_input(const char *prompt);
 
+int accept_yesno(const char *prompt);
+
 void resume_and_exit(int status);
 
 void display_user_state();
@@ -42,6 +44,14 @@ void main_ui();
 void draw_button_in_start_ui();
 
 void flip_screen();
+
+void strlwr(char *s) {
+	while(*s) {
+		if('A' <= *s && *s <= 'Z')
+			*s = *s - 'A' + 'a';
+		s ++;
+	}
+}
 
 int connect_to_server() {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -152,6 +162,18 @@ int button_quit_game() {
 }
 
 int button_launch_battle() {
+	if(accept_yesno("invite friend? (yes/no)")) {
+		char *name = accept_input("your friend name: ");
+
+		client_message_t cm;
+		memset(&cm, 0, sizeof(client_message_t));
+		cm.command = CLIENT_COMMAND_LAUNCH_BATTLE;
+		strncpy(cm.user_name, name, USERNAME_SIZE - 1);
+		wrap_send(&cm);
+	}else{
+		send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
+	}
+
 	return 0;
 }
 
@@ -348,6 +370,20 @@ char *accept_input(const char *prompt) {
 	return line;
 }
 
+int accept_yesno(const char *prompt) {
+	while(1) {
+		char *input = accept_input(prompt);
+		strlwr(input);
+		if(strcmp(input, "y") == 0
+		|| strcmp(input, "yes") == 0) {
+			return true;
+		}else if(strcmp(input, "n") == 0
+		|| strcmp(input, "no") == 0) {
+			return false;
+		}
+	}
+}
+
 void resume_and_exit(int status) {
 	send_command(CLIENT_COMMAND_USER_QUIT);
 	wrap_set_term_attr(&raw_termio);
@@ -528,9 +564,9 @@ void main_ui() {
 }
 
 int main() {
-	system("clear");
 	client_fd = connect_to_server();
 
+	system("clear");
 	init_scr_wh();
 	wrap_get_term_attr(&raw_termio);
 	hide_cursor();
