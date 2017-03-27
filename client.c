@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include <stdarg.h>
 
 #include "common.h"
@@ -11,14 +12,23 @@
 static int scr_actual_w = 0;
 static int scr_actual_h = 0;
 
+static int user_state = USER_STATE_NOT_LOGIN;
 static char *user_name = "<unknown>";
-static char *user_state = "not login";
+static char *user_state_s[] = {
+	[USER_STATE_NOT_LOGIN] = "not login",
+	[USER_STATE_LOGIN]     = "login",
+	[USER_STATE_BATTLE]    = "battle",
+};
 
 static int client_fd = -1;
 
 static struct termio raw_termio;
 
 static char *server_addr = "127.0.0.1";
+
+
+pthread_mutex_t bottom_bar_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t screen_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 char *readline();
@@ -40,6 +50,8 @@ void resume_and_exit(int status);
 void display_user_state();
 
 void main_ui();
+
+void run_battle();
 
 void draw_button_in_start_ui();
 
@@ -98,13 +110,6 @@ void wrap_recv(server_message_t *psm) {
 	}
 }
 
-server_message_t *send_recv(client_message_t *pcm) {
-	static server_message_t sm;
-	wrap_send(pcm);
-	wrap_recv(&sm);
-	return &sm;
-}
-
 void send_command(int command) {
 	client_message_t cm;
 	cm.command = command;
@@ -129,29 +134,9 @@ int button_login() {
 	memset(&cm, 0, sizeof(client_message_t));
 	cm.command = CLIENT_COMMAND_USER_LOGIN;
 	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
-	server_message_t *psm = send_recv(&cm);
+	wrap_send(&cm);
 
-	if(psm->response == SERVER_RESPONSE_LOGIN_SUCCESS) {
-		user_name = name;
-		user_state = "login";
-		flip_screen();
-		server_say("welcome to simple net-based game");
-		display_user_state();
-		main_ui();
-		flip_screen();
-		display_user_state();
-		draw_button_in_start_ui();
-	}else if(psm->response == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID) {
-		user_state = "login fail";
-		server_say("your name has been registered!");
-		display_user_state();
-	}else if(psm->response == SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS) {
-		user_state = "login fail";
-		server_say("server fail");
-		display_user_state();
-	}else if(psm->response == SERVER_RESPONSE_YOU_HAVE_LOGINED) {
-		server_say("you have logined");
-	}
+	user_name = name;
 
 	return 0;
 }
@@ -187,7 +172,7 @@ int button_join_battle() {
 
 int button_logout() {
 	user_name = "<unknown>";
-	user_state = "not login";
+	user_state = USER_STATE_NOT_LOGIN;
 	send_command(CLIENT_COMMAND_LOGOUT);
 	bottom_bar_output(0, "logout");
 	return -1;
@@ -284,6 +269,10 @@ void show_cursor() {
 	printf("\033[?25h");
 }
 
+int keyboard_detected() {
+	return 0;
+}
+
 void init_scr_wh() {
 	struct winsize ws;
 	ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
@@ -339,6 +328,7 @@ char *sformat(const char *format, ...) {
 
 void bottom_bar_output(int line, const char *format, ...) {
 	assert(line <= 0);
+	pthread_mutex_lock(&bottom_bar_lock);
 	set_cursor(1, SCR_H - 1 + line);
 	for(int i = 0; i < scr_actual_w; i++)
 		printf(" ");
@@ -348,10 +338,13 @@ void bottom_bar_output(int line, const char *format, ...) {
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
 	va_end(ap);
+
+	pthread_mutex_unlock(&bottom_bar_lock);
 }
 
 void display_user_state() {
-	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, 0, user_state);
+	assert(user_state <= sizeof(user_state_s) / sizeof(user_state_s[0]));
+	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, 0, user_state_s[user_state]);
 }
 
 void server_say(const char *message) {
@@ -360,6 +353,10 @@ void server_say(const char *message) {
 
 void tiny_debug(const char *output) {
 	bottom_bar_output(0, "\033[1;34m[%s]\033[0m %s", "DEBUG", output);
+}
+
+void error(const char *output) {
+	bottom_bar_output(0, "\033[1;31m[%s]\033[0m %s", "ERROR", output);
 }
 
 char *accept_input(const char *prompt) {
@@ -541,6 +538,10 @@ void start_ui() {
 		display_user_state();
 		int sel = switch_selected_button_respond_to_key(0, 2);
 		buttons[sel].button_func();
+
+		if(user_state == USER_STATE_LOGIN) {
+			main_ui();
+		}
 	}
 }
 
@@ -552,14 +553,135 @@ void draw_button_in_main_ui() {
 }
 
 void main_ui() {
+	flip_screen();
 	while(1) {
 		draw_button_in_main_ui();
 		int sel = switch_selected_button_respond_to_key(2, 6);
 		int ret_code = buttons[sel].button_func();
 
-		if(ret_code < 0) {
+		if(ret_code < 0 || user_state == USER_STATE_NOT_LOGIN) {
 			break;
 		}
+
+		if(user_state == USER_STATE_BATTLE) {
+			run_battle();
+		}
+	}
+}
+
+int serv_response_you_have_not_login(server_message_t *psm) {
+	server_say("you havn't logined");
+	return 0;
+}
+
+int serv_response_login_success(server_message_t *psm) {
+	server_say("welcome to simple net-based game");
+	user_state = USER_STATE_LOGIN;
+	display_user_state();
+	return 0;
+}
+
+int serv_response_login_fail_dup_userid(server_message_t *psm) {
+	server_say("your name has been registered!");
+	display_user_state();
+	return 0;
+}
+
+int serv_response_login_fail_server_limits(server_message_t *psm) {
+	server_say("server fail");
+	display_user_state();
+	return 0;
+}
+
+int serv_response_you_have_logined(server_message_t *psm) {
+	server_say("you have logined");
+	return 0;
+}
+
+int serv_msg_accept_battle(server_message_t *psm) {
+	server_say(sformat("friend %s accept your invitation", psm->friend_name));
+	return 0;
+}
+
+int serv_msg_reject_battle(server_message_t *psm) {
+	server_say(sformat("friend %s reject your invitation", psm->friend_name));
+	return 0;
+}
+
+int serv_msg_friend_not_login(server_message_t *psm) {
+	server_say(sformat("friend %s hasn't login", psm->friend_name));
+	return 0;
+}
+
+int serv_msg_friend_already_in_battle(server_message_t *psm) {
+	server_say(sformat("friend %s has join another battle", psm->friend_name));
+	return 0;
+}
+
+int serv_msg_you_are_invited(server_message_t *psm) {
+	server_say(sformat("friend %s invite you to his battle [y|n]?", psm->friend_name));
+	return 0;
+}
+
+int serv_msg_friend_quit_battle(server_message_t *psm) {
+	server_say(sformat("friend %s quit battle", psm->friend_name));
+	return 0;
+}
+
+int serv_msg_battle_disbanded(server_message_t *psm) {
+	server_say("battle is disbanded");
+	return 0;
+}
+
+int serv_msg_battle_info(server_message_t *psm) {
+	return 0;
+}
+
+int serv_msg_you_are_dead(server_message_t *psm) {
+	server_say("you're dead");
+	return -1;
+}
+
+static int (*recv_msg_func[])(server_message_t *) = {
+	[SERVER_RESPONSE_LOGIN_SUCCESS] = serv_response_login_success,
+	[SERVER_RESPONSE_NOT_LOGIN] = serv_response_you_have_not_login,
+	[SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID] = serv_response_login_fail_dup_userid,
+	[SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS] = serv_response_login_fail_server_limits,
+	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = serv_response_you_have_logined,
+	[SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE] = serv_msg_accept_battle,
+	[SERVER_MESSAGE_FRIEND_REJECT_BATTLE] = serv_msg_reject_battle,
+	[SERVER_MESSAGE_FRIEND_NOT_LOGIN] = serv_msg_friend_not_login,
+	[SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE] = serv_msg_friend_already_in_battle,
+	[SERVER_MESSAGE_INVITE_TO_BATTLE] = serv_msg_you_are_invited,
+	[SERVER_MESSAGE_USER_QUIT_BATTLE] = serv_msg_friend_quit_battle,
+	[SERVER_MESSAGE_BATTLE_DISBANDED] = serv_msg_battle_disbanded,
+	[SERVER_MESSAGE_BATTLE_INFORMATION] = serv_msg_battle_info,
+	[SERVER_MESSAGE_YOU_ARE_DEAD] = serv_msg_you_are_dead,
+};
+
+void run_battle() {
+	while(1) {
+		sleep(1);
+	}
+}
+
+void *message_monitor(void *args) {
+	server_message_t sm;
+	bottom_bar_output(0, "enter thread");
+	while(1) {
+		wrap_recv(&sm);
+		bottom_bar_output(0, "message:%d", sm.message);
+		if(recv_msg_func[sm.message]) {
+			recv_msg_func[sm.message](&sm);
+		}
+	}
+	return NULL;
+}
+
+void start_message_monitor() {
+	pthread_t thread;
+	if(pthread_create(&thread, NULL, message_monitor, NULL) != 0) {
+		eprintf("fail to start message monitor.\n");
 	}
 }
 
@@ -572,9 +694,9 @@ int main() {
 	hide_cursor();
 
 	flip_screen();
+	start_message_monitor();
 	start_ui();
 
-	set_cursor(1, SCR_H + 1);
 	resume_and_exit(0);
 	return 0;
 }

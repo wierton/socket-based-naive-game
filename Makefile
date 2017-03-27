@@ -6,7 +6,7 @@ server:server.c common.h
 	gcc -Wall -std=c11 server.c -o server -lpthread -ggdb
 
 client:client.c common.h
-	gcc -Wall -std=c11 client.c -o client -ggdb
+	gcc -Wall -std=c11 client.c -o client -lpthread -ggdb
 
 clean:
 	rm server client

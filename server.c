@@ -8,8 +8,6 @@
 
 #include "common.h"
 
-#define PORT 50000
-
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t battles_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -101,7 +99,7 @@ void user_invited_to_join_battle(uint32_t battle_id, uint32_t session_id) {
 	if(sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
 		if(battle_id != sessions[session_id].battle_id) {
 			// reject old battle
-			send_to_client(sessions[session_id].inviter_id, SERVER_RESPONSE_FRIEND_REJECT_BATTLE);
+			send_to_client(sessions[session_id].inviter_id, SERVER_MESSAGE_FRIEND_REJECT_BATTLE);
 		}
 	}
 
@@ -234,10 +232,10 @@ int invite_friend_to_battle(int battle_id, int user_id, int friend_id) {
 	char *friend_name = sessions[friend_id].user_name;
 	if(friend_id == -1) {
 		logi("friend '%s' hasn't login\n", friend_name);
-		send_to_client(conn, SERVER_RESPONSE_FRIEND_NOT_LOGIN);
+		send_to_client(conn, SERVER_MESSAGE_FRIEND_NOT_LOGIN);
 	}else if(sessions[friend_id].state == USER_STATE_BATTLE) {
 		logi("friend '%s' already in battle\n", friend_name);
-		send_to_client(conn, SERVER_RESPONSE_FRIEND_ALREADY_IN_BATTLE);
+		send_to_client(conn, SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE);
 	}else{
 		logi("friend %d@'%s' found\n", friend_id, friend_name);
 
@@ -323,7 +321,7 @@ int client_command_accept_battle(int session_id) {
 		logi("accept success\n");
 		server_message_t sm;
 		memset(&sm, 0, sizeof(server_message_t));
-		sm.message = SERVER_RESPONSE_FRIEND_ACCEPT_BATTLE;
+		sm.message = SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE;
 		strncpy(sm.friend_name, sessions[inviter_id].user_name, USERNAME_SIZE - 1);
 		wrap_send(inviter_id, &sm);
 	}else{
@@ -342,7 +340,7 @@ int client_command_reject_battle(int session_id) {
 	}else if(sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
 		logi("reject success\n");
 		int battle_id = sessions[session_id].battle_id;
-		send_to_client(sessions[session_id].inviter_id, SERVER_RESPONSE_FRIEND_REJECT_BATTLE);
+		send_to_client(sessions[session_id].inviter_id, SERVER_MESSAGE_FRIEND_REJECT_BATTLE);
 		sessions[session_id].state = USER_STATE_LOGIN;
 		battles[battle_id].users[session_id].is_joined = false;
 	}else{
