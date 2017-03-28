@@ -238,3 +238,155 @@
 443: ========================EXIT=======================
 
 
+949: =========================START======================
+704: enter start ui
+640: enter select button, [0, 2)
+925: monitor thread starts
+663: ==> return sel: 0
+709: user select 0@login
+138: call button handler button_login
+139: ==> require name
+142: ==> input name 'as'
+150: ==> send login message to server
+928: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+930: ==> call message handler
+728: call message handler serv_response_login_success
+729: ==> try server_say
+731: ==> change user_state from not login into login
+733: ==> update user state to screen
+161: wait until message=0
+165: ==> set user name to 'as'
+713: user state changed into LOGIN
+714: enter main ui
+928: receive server message: (null)
+930: ==> call message handler
+777: call message handler serv_response_all_friends_info
+787: draw catalogs of friends
+640: enter select button, [2, 6)
+949: =========================START======================
+704: enter start ui
+640: enter select button, [0, 2)
+925: monitor thread starts
+663: ==> return sel: 0
+709: user select 0@login
+138: call button handler button_login
+139: ==> require name
+142: ==> input name 'as'
+150: ==> send login message to server
+928: receive server message: SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
+930: ==> call message handler
+739: call message handler serv_response_login_fail_dup_userid
+161: wait until message=3
+165: ==> set user name to 'as'
+640: enter select button, [0, 2)
+928: receive server message: SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN
+930: ==> call message handler
+722: call message handler serv_response_you_have_not_login
+663: ==> return sel: 0
+709: user select 0@login
+138: call button handler button_login
+139: ==> require name
+142: ==> input name 'qw'
+150: ==> send login message to server
+928: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+928: receive server message: (null)
+930: ==> call message handler
+930: ==> call message handler
+728: call message handler serv_response_login_success
+799: call message handler serv_msg_friend_login
+729: ==> try server_say
+731: ==> change user_state from not login into login
+733: ==> update user state to screen
+161: wait until message=0
+165: ==> set user name to 'qw'
+713: user state changed into LOGIN
+714: enter main ui
+928: receive server message: (null)
+930: ==> call message handler
+777: call message handler serv_response_all_friends_info
+787: draw catalogs of friends
+640: enter select button, [2, 6)
+949: =========================START======================
+704: enter start ui
+925: monitor thread starts
+640: enter select button, [0, 2)
+663: ==> return sel: 0
+709: user select 0@login
+138: call button handler button_login
+139: ==> require name
+142: ==> input name 'lambda'
+150: ==> send login message to server
+928: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+928: receive server message: (null)
+930: ==> call message handler
+930: ==> call message handler
+728: call message handler serv_response_login_success
+799: call message handler serv_msg_friend_login
+729: ==> try server_say
+731: ==> change user_state from not login into login
+733: ==> update user state to screen
+161: wait until message=0
+928: receive server message: (null)
+930: ==> call message handler
+799: call message handler serv_msg_friend_login
+165: ==> set user name to 'lambda'
+713: user state changed into LOGIN
+714: enter main ui
+928: receive server message: (null)
+930: ==> call message handler
+777: call message handler serv_response_all_friends_info
+787: draw catalogs of friends
+640: enter select button, [2, 6)
+654: sel_menu enter command mode
+488: accept command: 'ulist'
+928: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+930: ==> call message handler
+761: call message handler serv_response_all_users_info
+770: server response user list: as, qw, lambda
+654: sel_menu enter command mode
+488: accept command: 'help --list'
+654: sel_menu enter command mode
+488: accept command: 'help'
+654: sel_menu enter command mode
+488: accept command: 'help quit'
+654: sel_menu enter command mode
+488: accept command: 'help ulist'
+663: ==> return sel: 5
+680: user select 5
+214: call button handler button_logout
+683: button handler return -1
+687: quit main ui with user_state:1
+928: receive server message: (null)
+640: enter select button, [0, 2)
+930: ==> call message handler
+812: call message handler serv_msg_friend_logout
+928: receive server message: (null)
+930: ==> call message handler
+812: call message handler serv_msg_friend_logout
+663: ==> return sel: 0
+709: user select 0@login
+138: call button handler button_login
+139: ==> require name
+142: ==> input name '456'
+150: ==> send login message to server
+928: receive server message: (null)
+928: receive server message: (null)
+930: ==> call message handler
+930: ==> call message handler
+799: call message handler serv_msg_friend_login
+799: call message handler serv_msg_friend_login
+928: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+930: ==> call message handler
+728: call message handler serv_response_login_success
+729: ==> try server_say
+731: ==> change user_state from not login into login
+733: ==> update user state to screen
+161: wait until message=0
+165: ==> set user name to '456'
+713: user state changed into LOGIN
+714: enter main ui
+928: receive server message: (null)
+930: ==> call message handler
+777: call message handler serv_response_all_friends_info
+787: draw catalogs of friends
+640: enter select button, [2, 6)

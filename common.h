@@ -120,6 +120,9 @@
 #define SCR_W 60
 #define SCR_H 20
 
+#define BATTLE_W (SCR_W)
+#define BATTLE_H (SCR_H - 2)
+
 #define USERNAME_SIZE  7
 #define USER_CNT   5
 
@@ -171,8 +174,34 @@ enum {
 	SERVER_MESSAGE_BATTLE_DISBANDED,          // since no other users in this battle
 	SERVER_MESSAGE_BATTLE_INFORMATION,
 	SERVER_MESSAGE_YOU_ARE_DEAD,
+	SERVER_MESSAGE_YOU_ARE_SHOOTED,
+	SERVER_MESSAGE_YOU_ARE_TRAPED_IN_MAGMA,
+	SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL,
 };
 
+enum {
+	ITEM_NONE,
+	ITEM_AMMO,
+	ITEM_MAGMA,
+	ITEM_WALL,
+	ITEM_BLOOD_VIAL,
+	ITEM_END,
+	ITEM_BULLET,
+};
+
+enum {
+	DIR_UP,
+	DIR_DOWN,
+	DIR_LEFT,
+	DIR_RIGHT,
+};
+
+enum {
+	BATTLE_STATE_UNJOINED,
+	BATTLE_STATE_LIVE,
+	BATTLE_STATE_WITNESS,
+	BATTLE_STATE_DEAD,
+};
 
 /* unused  -->  not login  -->  login  <-...->  battle
  *
@@ -214,9 +243,10 @@ typedef struct server_message_t {
 		} all_users[USER_CNT];
 
 		struct {
-			uint8_t life, nr_users;
+			uint8_t life, index;
 			pos_t user_pos[USER_CNT];
-			pos_t bullet_pos[MAX_ITEM];
+			uint8_t item_kind[MAX_ITEM];
+			pos_t item_pos[MAX_ITEM];
 		};
 	};
 } server_message_t;

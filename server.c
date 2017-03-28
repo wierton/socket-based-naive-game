@@ -33,7 +33,7 @@ struct battle_t {
 	int is_alloced;
 	size_t nr_users;
 	struct {
-		int is_joined;
+		int battle_state;
 		int life;
 		pos_t pos;
 		pos_t last_pos;
@@ -41,9 +41,14 @@ struct battle_t {
 
 	struct {
 		int is_used;
+		int dir;
+		union {
+			int owner;
+			int times;
+		};
+		int kind;
 		pos_t pos;
-		pos_t last_pos;
-	} bullets[MAX_ITEM];
+	} items[MAX_ITEM];
 
 } battles[USER_CNT];
 
@@ -63,7 +68,7 @@ void user_join_battle_common_part(uint32_t battle_id, uint32_t session_id, uint3
 
 	log("user %s join in battle %d(%lu users)\n", sessions[session_id].user_name, battle_id, battles[battle_id].nr_users);
 	battles[battle_id].nr_users ++;
-	battles[battle_id].users[session_id].is_joined = true;
+	battles[battle_id].users[session_id].battle_state = BATTLE_STATE_LIVE;
 	sessions[session_id].state = joined_state;
 }
 
@@ -72,7 +77,7 @@ void user_quit_battle(uint32_t battle_id, uint32_t session_id) {
 
 	log("user %s quit from battle %d(%lu users)\n", sessions[session_id].user_name, battle_id, battles[battle_id].nr_users);
 	battles[battle_id].nr_users --;
-	battles[battle_id].users[session_id].is_joined = false;
+	battles[battle_id].users[session_id].battle_state = BATTLE_STATE_LIVE;
 	sessions[session_id].state = USER_STATE_LOGIN;
 
 	if(battles[battle_id].nr_users == 0) {
@@ -81,7 +86,7 @@ void user_quit_battle(uint32_t battle_id, uint32_t session_id) {
 	}else{
 		// FIXME: send messages to buddies that someone quit battle
 		for(int i = 0; i < USER_CNT; i++) {
-			if(battles[battle_id].users[i].is_joined) {
+			if(battles[battle_id].users[i].battle_state) {
 				server_message_t sm;
 				memset(&sm, 0, sizeof(server_message_t));
 				sm.message = SERVER_MESSAGE_USER_QUIT_BATTLE;
@@ -181,6 +186,183 @@ void inform_friends(int session_id, int message) {
 			continue;
 		strncpy(sm.friend_name, user_name, USERNAME_SIZE - 1);
 		wrap_send(sessions[i].conn, &sm);
+	}
+}
+
+int get_unused_item(int bid) {
+	int ret_item_id = -1;
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(battles[bid].items[i].is_used) {
+			ret_item_id = i;
+			battles[bid].items[i].is_used = true;
+			break;
+		}
+	}
+	return ret_item_id;
+}
+
+void random_generate_items(int bid) {
+	int item_id = get_unused_item(bid);
+	if(item_id == -1) return;
+
+	battles[bid].items[item_id].kind = rand() % ITEM_END;
+	battles[bid].items[item_id].pos.x = rand() % BATTLE_W;
+	battles[bid].items[item_id].pos.y = rand() % BATTLE_H;
+}
+
+void move_bullets(int bid) {
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(battles[bid].items[i].kind != ITEM_BULLET)
+			continue;
+		uint8_t *px = &(battles[bid].items[i].pos.x);
+		uint8_t *py = &(battles[bid].items[i].pos.y);
+
+		switch(battles[bid].items[i].dir) {
+			case DIR_UP:	if(*py > 0) (*py)--;break;
+			case DIR_DOWN:	if(*py < BATTLE_H - 1) (*py)++;break;
+			case DIR_LEFT:	if(*px > 0) (*px)--;break;
+			case DIR_RIGHT:	if(*px < BATTLE_W - 1) (*px)++;break;
+		}
+	}
+}
+
+void check_who_get_blood_vial(int bid) {
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(battles[bid].items[i].kind != ITEM_BLOOD_VIAL)
+			continue;
+
+		int ix = battles[bid].items[i].pos.x;
+		int iy = battles[bid].items[i].pos.y;
+
+		for(int j = 0; j < USER_CNT; j++) {
+			if(battles[bid].users[j].battle_state != BATTLE_STATE_LIVE)
+				continue;
+			int ux = battles[bid].users[j].pos.x;
+			int uy = battles[bid].users[j].pos.y;
+
+			if(ix == ux && iy == uy) {
+				battles[bid].users[j].life ++;
+				battles[bid].items[i].is_used = false;
+				send_to_client(j, SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL);
+				break;
+			}
+		}
+	}
+}
+
+void check_who_traped_in_magma(int bid) {
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(battles[bid].items[i].kind != ITEM_MAGMA)
+			continue;
+
+		int ix = battles[bid].items[i].pos.x;
+		int iy = battles[bid].items[i].pos.y;
+
+		for(int j = 0; j < USER_CNT; j++) {
+			if(battles[bid].users[j].battle_state != BATTLE_STATE_LIVE)
+				continue;
+			int ux = battles[bid].users[j].pos.x;
+			int uy = battles[bid].users[j].pos.y;
+
+			if(ix == ux && iy == uy) {
+				battles[bid].users[j].life --;
+				battles[bid].items[i].times --;
+				send_to_client(j, SERVER_MESSAGE_YOU_ARE_TRAPED_IN_MAGMA);
+				if(battles[bid].items[i].times <= 0) {
+					battles[bid].items[i].is_used = false;
+				}
+				break;
+			}
+		}
+	}
+}
+
+void check_who_is_shooted(int bid) {
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(battles[bid].items[i].kind != ITEM_MAGMA)
+			continue;
+
+		int ix = battles[bid].items[i].pos.x;
+		int iy = battles[bid].items[i].pos.y;
+
+		for(int j = 0; j < USER_CNT; j++) {
+			if(battles[bid].users[j].battle_state != BATTLE_STATE_LIVE)
+				continue;
+			int ux = battles[bid].users[j].pos.x;
+			int uy = battles[bid].users[j].pos.y;
+
+			if(ix == ux && iy == uy) {
+				battles[bid].users[j].life --;
+				send_to_client(j, SERVER_MESSAGE_YOU_ARE_SHOOTED);
+				battles[bid].items[i].is_used = false;
+				break;
+			}
+		}
+	}
+}
+
+void check_who_is_dead(int bid) {
+	for(int i = 0; i < USER_CNT; i++) {
+		if(battles[bid].users[i].battle_state == BATTLE_STATE_DEAD){
+			send_to_client(i, SERVER_MESSAGE_YOU_ARE_DEAD);
+			battles[bid].users[i].battle_state = BATTLE_STATE_WITNESS;
+		}
+	}
+}
+
+void inform_all_user_battle_state(int bid) {
+	server_message_t sm;
+	sm.message = SERVER_MESSAGE_BATTLE_INFORMATION;
+	for(int i = 0; i < USER_CNT; i++) {
+		if(battles[bid].users[i].battle_state == BATTLE_STATE_LIVE) {
+			sm.user_pos[i].x = battles[bid].users[i].pos.x;
+			sm.user_pos[i].y = battles[bid].users[i].pos.y;
+		}else{
+			sm.user_pos[i].x = -1;
+			sm.user_pos[i].y = -1;
+		}
+	}
+
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(battles[bid].items[i].is_used) {
+			sm.item_kind[i] = battles[bid].items[i].kind;
+			sm.item_pos[i].x = battles[bid].items[i].pos.x;
+			sm.item_pos[i].y = battles[bid].items[i].pos.y;
+		}else{
+			sm.item_kind[i] = ITEM_NONE;
+		}
+	}
+
+	for(int i = 0; i < USER_CNT; i++) {
+		sm.index = i;
+		sm.life = battles[bid].users[i].life;
+		if(battles[bid].users[i].battle_state != BATTLE_STATE_UNJOINED) {
+			wrap_send(sessions[i].conn, &sm);
+		}
+	}
+}
+
+void *battle_ruler(void *args) {
+	int bid = (int)(uintptr_t)args;
+	// FIXME: battle re-alloced before exiting loop 
+	while(battles[bid].is_alloced) {
+		move_bullets(bid);
+		check_who_get_blood_vial(bid);
+		check_who_traped_in_magma(bid);
+		check_who_is_shooted(bid);
+		check_who_is_dead(bid);
+		
+		random_generate_items(bid);
+
+		inform_all_user_battle_state(bid);
+	}
+	return NULL;
+}
+
+void launch_battle(int battle_id) {
+	pthread_t thread;
+	if(pthread_create(&thread, NULL, battle_ruler, (void *)(uintptr_t)battle_id) == -1) {
+		eprintf("fail to launch battle\n");
 	}
 }
 
@@ -421,7 +603,7 @@ int client_command_reject_battle(int session_id) {
 		int battle_id = sessions[session_id].battle_id;
 		send_to_client(sessions[session_id].inviter_id, SERVER_MESSAGE_FRIEND_REJECT_BATTLE);
 		sessions[session_id].state = USER_STATE_LOGIN;
-		battles[battle_id].users[session_id].is_joined = false;
+		battles[battle_id].users[session_id].battle_state = BATTLE_STATE_UNJOINED;
 	}else{
 		logi("hasn't been invited\n");
 		send_to_client(session_id, SERVER_RESPONSE_NOBODY_INVITE_YOU);
