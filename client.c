@@ -160,6 +160,8 @@ int button_login() {
 	} while(1);
 	wlog("wait until message=%d\n", global_serv_message);
 
+	send_command(CLIENT_COMMAND_FETCH_ALL_FRIENDS);
+
 	wlogi("set user name to '%s'\n", name);
 	user_name = name;
 
@@ -610,6 +612,8 @@ void draw_catalog(catalog_t *pcl) {
 		printf("─");
 	printf("┘");
 
+	fflush(stdout);
+
 	pthread_mutex_unlock(&cursor_lock);
 }
 
@@ -768,6 +772,23 @@ int serv_response_all_users_info(server_message_t *psm) {
 	return 0;
 }
 
+int serv_response_all_friends_info(server_message_t *psm) {
+	int j = 0;
+	wlog("call message handler %s\n", __func__);
+	for(int i = 0; i < USER_CNT; i++) {
+		int state = psm->all_users[i].user_state;
+		if(state != USER_STATE_UNUSED
+		&& state != USER_STATE_NOT_LOGIN) {
+			strncpy(friend_list.records[j ++],
+					psm->all_users[i].user_name,
+					USERNAME_SIZE - 1);
+		}
+	}
+	wlog("draw catalogs of friends\n");
+	draw_catalog(&friend_list);
+	return 0;
+}
+
 int serv_response_nobody_invite_you(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	server_say("no body invite you");
@@ -861,6 +882,7 @@ static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS] = serv_response_login_fail_server_limits,
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = serv_response_you_have_logined,
 	[SERVER_RESPONSE_ALL_USERS_INFO] = serv_response_all_users_info,
+	[SERVER_RESPONSE_ALL_FRIENDS_INFO] = serv_response_all_friends_info,
 	[SERVER_RESPONSE_NOBODY_INVITE_YOU] = serv_response_nobody_invite_you,
 	[SERVER_MESSAGE_FRIEND_LOGIN] = serv_msg_friend_login,
 	[SERVER_MESSAGE_FRIEND_LOGOUT] = serv_msg_friend_logout,

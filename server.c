@@ -265,6 +265,28 @@ int client_command_fetch_all_users(int session_id) {
 	return 0;
 }
 
+int client_command_fetch_all_friends(int session_id) {
+	int conn = sessions[session_id].conn;
+	char *user_name = sessions[session_id].user_name;
+	log("user %d@'%s' tries to fetch all friends' info\n", session_id, user_name);
+
+	if(!query_session_built(session_id)) {
+		logi("user %d@'%s' who tries to list users hasn't login\n", session_id, user_name);
+		send_to_client(conn, SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN);
+		return 0;
+	}
+
+	server_message_t sm;
+	memset(&sm, 0, sizeof(server_message_t));
+	list_all_users(&sm);
+	sm.all_users[session_id].user_state = USER_STATE_UNUSED;
+	sm.response = SERVER_RESPONSE_ALL_FRIENDS_INFO;
+
+	wrap_send(conn, &sm);
+
+	return 0;
+}
+
 
 int invite_friend_to_battle(int battle_id, int user_id, int friend_id) {
 	int conn = sessions[user_id].conn;
@@ -436,6 +458,7 @@ static int(*handler[])(int) = {
 	[CLIENT_COMMAND_USER_LOGIN] = client_command_user_login,
 	[CLIENT_COMMAND_USER_LOGOUT] = client_command_user_logout,
 	[CLIENT_COMMAND_FETCH_ALL_USERS] = client_command_fetch_all_users,
+	[CLIENT_COMMAND_FETCH_ALL_FRIENDS] = client_command_fetch_all_friends,
 	[CLIENT_COMMAND_LAUNCH_BATTLE] = client_command_launch_battle,
 	[CLIENT_COMMAND_QUIT_BATTLE] = client_command_quit_battle,
 	[CLIENT_COMMAND_ACCEPT_BATTLE] = client_command_accept_battle,
