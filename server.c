@@ -5,11 +5,14 @@
 #include <pthread.h>
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 
 #include "common.h"
 
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t battles_lock = PTHREAD_MUTEX_INITIALIZER;
+
+int server_fd = 0;
 
 void wrap_recv(int conn, client_message_t *pcm);
 void wrap_send(int conn, server_message_t *psm);
@@ -153,6 +156,7 @@ int get_unused_session() {
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sessions[i].state == USER_STATE_UNUSED) {
 			memset(&sessions[i], 0, sizeof(struct session_t));
+			sessions[i].conn = -1;
 			sessions[i].state = USER_STATE_NOT_LOGIN;
 			ret_session_id = i;
 			break;
@@ -427,6 +431,7 @@ int client_command_reject_battle(int session_id) {
 
 int client_command_quit(int session_id) {
 	int conn = sessions[session_id].conn;
+	sessions[session_id].conn = -1;
 	log("user %d@%s quit\n", session_id, sessions[session_id].user_name);
 	sessions[session_id].state = USER_STATE_UNUSED;
 	close(conn);
@@ -565,17 +570,44 @@ int server_start() {
 	return sockfd;
 }
 
+void terminate_process(int recved_signal) {
+	for(int i = 0; i < USER_CNT; i++) {
+		if(sessions[i].conn >= 0) {
+			close(sessions[i].conn);
+			log("close conn:%d\n", sessions[i].conn);
+		}
+	}
+
+	if(server_fd) {
+		close(server_fd);
+		log("close server fd:%d\n", server_fd);
+	}
+
+	pthread_mutex_destroy(&sessions_lock);
+	pthread_mutex_destroy(&battles_lock);
+
+	log("receive terminate signal and exit(0)\n");
+	exit(0);
+}
+
 int main() {
 	srand(time(NULL));
 
 	pthread_t thread;
 
-	int sockfd = server_start();
+	if(signal(SIGINT, terminate_process) == SIG_ERR) {
+		eprintf("An error occurred while setting a signal handler.\n");
+	}
+
+	server_fd = server_start();
+
+	for(int i = 0; i < USER_CNT; i++)
+		sessions[i].conn = -1;
 
 	struct sockaddr_in client_addr;
 	socklen_t length = sizeof(client_addr);
 	while(1) {
-		int conn = accept(sockfd, (struct sockaddr*)&client_addr, &length);
+		int conn = accept(server_fd, (struct sockaddr*)&client_addr, &length);
 		log("connected by %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 		if(conn < 0) {
 			loge("fail to accept client.\n");
@@ -583,9 +615,6 @@ int main() {
 			loge("fail to create thread.\n");
 		}
 	}
-
-	pthread_mutex_destroy(&sessions_lock);
-	pthread_mutex_destroy(&battles_lock);
 
 	return 0;
 }
