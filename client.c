@@ -55,6 +55,16 @@ void display_user_state();
 
 void flip_screen();
 
+struct catalog_t {
+	pos_t pos;
+	const char *title;
+	char records[USER_CNT][USERNAME_SIZE];
+} friend_list = {
+	{34, 5}, "online friends",
+};
+
+typedef struct catalog_t catalog_t;
+
 void strlwr(char *s) {
 	while(*s) {
 		if('A' <= *s && *s <= 'Z')
@@ -188,11 +198,13 @@ int button_launch_battle() {
 
 int button_invite_user() {
 	wlog("call button handler %s\n", __func__);
+	bottom_bar_output(0, "please type invite [user] when you are in battle");
 	return 0;
 }
 
 int button_join_battle() {
 	wlog("call button handler %s\n", __func__);
+	send_command(CLIENT_COMMAND_ACCEPT_BATTLE);
 	return 0;
 }
 
@@ -200,7 +212,7 @@ int button_logout() {
 	wlog("call button handler %s\n", __func__);
 	user_name = "<unknown>";
 	user_state = USER_STATE_NOT_LOGIN;
-	send_command(CLIENT_COMMAND_LOGOUT);
+	send_command(CLIENT_COMMAND_USER_LOGOUT);
 	bottom_bar_output(0, "logout");
 	return -1;
 }
@@ -426,8 +438,7 @@ void resume_and_exit(int status) {
 	set_cursor(1, SCR_H + 1);
 	show_cursor();
 	close(client_fd);
-	wlog("========================EXIT=======================\n");
-	wlog("\n\n");
+	wlog("========================EXIT=======================\n\n\n");
 	exit(status);
 }
 
@@ -437,10 +448,19 @@ int cmd_quit(char *args) {
 	return 0;
 }
 
+int cmd_ulist(char *args) {
+	send_command(CLIENT_COMMAND_FETCH_ALL_USERS);
+	return 0;
+}
+
 int cmd_help(char *args) {
 	if(args) {
 		if(strcmp(args, "--list") == 0) {
-			bottom_bar_output(0, "quit, help");
+			bottom_bar_output(0, "quit, help, ulist");
+		}else if(strcmp(args, "quit") == 0) {
+			bottom_bar_output(0, "quit the game and return terminal");
+		}else if(strcmp(args, "ulist") == 0) {
+			bottom_bar_output(0, "list all online friends");
 		}else{
 			bottom_bar_output(0, "no help for '%s'", args);
 		}
@@ -455,6 +475,7 @@ static struct {
 	int	(*func)(char *args);
 } command_handler[] = {
 	{"quit", cmd_quit},
+	{"ulist", cmd_ulist},
 	{"help", cmd_help},
 };
 
@@ -462,6 +483,7 @@ static struct {
 
 void read_and_execute_command() {
 	char *command = accept_input("command: ");
+	wlog("accept command: '%s'\n", command);
 	strtok(command, " \t");
 	char *args = strtok(NULL, " \t");
 
@@ -538,6 +560,58 @@ void draw_selected_button(uint32_t button_id) {
 	pthread_mutex_unlock(&cursor_lock);
 }
 
+void draw_catalog(catalog_t *pcl) {
+	int x = pcl->pos.x;
+	int y = pcl->pos.y;
+	int len = strlen(pcl->title);
+	int w = len;
+	if(len < USERNAME_SIZE) w = USERNAME_SIZE;
+
+	pthread_mutex_lock(&cursor_lock);
+	set_cursor(x, y);
+	printf("┌");
+	for(int i = 0; i < len; i++)
+		printf("─");
+	printf("┐");
+	set_cursor(x, y + 1);
+	printf("│");
+	printf("%s", pcl->title);
+	for(int i = w - len; i > 0; i--)
+		printf(" ");
+	printf("│");
+
+	set_cursor(x, y + 2);
+	printf("├");
+	for(int i = 0; i < w; i++)
+		printf("─");
+	printf("┤");
+
+	for(int i = 0; i < USER_CNT; i++) {
+		int j = 0;
+		int ulen = strlen(pcl->records[i]);
+		set_cursor(x, y + i + 3);
+		printf("│");
+		for(; j < (w - ulen) / 2; j++)
+			printf(" ");
+		if(ulen > 0) {
+			printf("%s", pcl->records[i]);
+			j += ulen;
+		}else{
+			printf("\b*");
+		}
+		for(; j < w; j++)
+			printf(" ");
+		printf("│");
+	}
+
+	set_cursor(x, y + USER_CNT + 3);
+	printf("└");
+	for(int i = 0; i < w; i++)
+		printf("─");
+	printf("┘");
+
+	pthread_mutex_unlock(&cursor_lock);
+}
 
 int match_char(char ch) {
 	char cc;
@@ -642,7 +716,7 @@ void start_ui() {
 
 int serv_response_you_have_not_login(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
-	server_say("you havn't logined");
+	server_say("you haven't logined");
 	return 0;
 }
 
@@ -677,6 +751,55 @@ int serv_response_you_have_logined(server_message_t *psm) {
 	return 0;
 }
 
+int serv_response_all_users_info(server_message_t *psm) {
+	int len = 0;
+	static char users[USERNAME_SIZE * USER_CNT];
+	wlog("call message handler %s\n", __func__);
+	for(int i = 0; i < USER_CNT; i++) {
+		int state = psm->all_users[i].user_state;
+		if(state != USER_STATE_UNUSED
+		&& state != USER_STATE_NOT_LOGIN) {
+			len += sprintf(users + len, "%s, ", psm->all_users[i].user_name);
+		}
+	}
+	users[len - 2] = 0;
+	wlog("server response user list: %s\n", users);
+	bottom_bar_output(0, "online: %s", users);
+	return 0;
+}
+
+int serv_response_nobody_invite_you(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("no body invite you");
+	return 0;
+}
+
+int serv_msg_friend_login(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(friend_list.records[i][0] == 0) {
+			strncpy(friend_list.records[i], psm->friend_name, USERNAME_SIZE - 1);
+			break;
+		}
+	}
+	draw_catalog(&friend_list);
+	server_say(sformat("friend %s login\n", psm->friend_name));
+	return 0;
+}
+
+int serv_msg_friend_logout(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(strncmp(friend_list.records[i], psm->friend_name, USERNAME_SIZE - 1) == 0) {
+			friend_list.records[i][0] = 0;
+			break;
+		}
+	}
+	draw_catalog(&friend_list);
+	server_say(sformat("friend %s logout\n", psm->friend_name));
+	return 0;
+}
+
 int serv_msg_accept_battle(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	server_say(sformat("friend %s accept your invitation", psm->friend_name));
@@ -702,12 +825,9 @@ int serv_msg_friend_already_in_battle(server_message_t *psm) {
 }
 
 int serv_msg_you_are_invited(server_message_t *psm) {
+	// FIXME:
 	wlog("call message handler %s\n", __func__);
-	if(accept_yesno(sformat("friend %s invite you to his battle [y|n]?", psm->friend_name))) {
-		send_command(CLIENT_COMMAND_ACCEPT_BATTLE);
-	}else{
-		send_command(CLIENT_COMMAND_REJECT_BATTLE);
-	}
+	server_say(sformat("friend %s invite you to his battle [press button to join]", psm->friend_name));
 	return 0;
 }
 
@@ -736,10 +856,14 @@ int serv_msg_you_are_dead(server_message_t *psm) {
 
 static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = serv_response_login_success,
-	[SERVER_RESPONSE_NOT_LOGIN] = serv_response_you_have_not_login,
+	[SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN] = serv_response_you_have_not_login,
 	[SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID] = serv_response_login_fail_dup_userid,
 	[SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS] = serv_response_login_fail_server_limits,
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = serv_response_you_have_logined,
+	[SERVER_RESPONSE_ALL_USERS_INFO] = serv_response_all_users_info,
+	[SERVER_RESPONSE_NOBODY_INVITE_YOU] = serv_response_nobody_invite_you,
+	[SERVER_MESSAGE_FRIEND_LOGIN] = serv_msg_friend_login,
+	[SERVER_MESSAGE_FRIEND_LOGOUT] = serv_msg_friend_logout,
 	[SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE] = serv_msg_accept_battle,
 	[SERVER_MESSAGE_FRIEND_REJECT_BATTLE] = serv_msg_reject_battle,
 	[SERVER_MESSAGE_FRIEND_NOT_LOGIN] = serv_msg_friend_not_login,
@@ -754,7 +878,7 @@ static int (*recv_msg_func[])(server_message_t *) = {
 static char *server_message_s[] = {
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = "SERVER_RESPONSE_LOGIN_SUCCESS",
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = "SERVER_RESPONSE_YOU_HAVE_LOGINED",
-	[SERVER_RESPONSE_NOT_LOGIN] = "SERVER_RESPONSE_NOT_LOGIN",
+	[SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN] = "SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN",
 	[SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID] = "SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID",
 	[SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS] = "SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS",
 	[SERVER_RESPONSE_ALL_USERS_INFO] = "SERVER_RESPONSE_ALL_USERS_INFO",
@@ -798,6 +922,7 @@ void start_message_monitor() {
 	}
 }
 
+
 int main() {
 	wlog("=========================START======================\n");
 	client_fd = connect_to_server();
@@ -808,6 +933,7 @@ int main() {
 	hide_cursor();
 
 	flip_screen();
+
 	start_message_monitor();
 	start_ui();
 

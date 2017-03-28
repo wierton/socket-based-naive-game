@@ -285,3 +285,1073 @@
 429: ========================EXIT=======================
 430: 
 
+576: sel_menu enter command mode
+802: =========================START======================
+626: enter start ui
+779: monitor thread starts
+562: enter select button, [0, 2)
+585: ==> return sel: 0
+631: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'alice'
+140: ==> send login message to server
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from not login into login
+655: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'alice'
+635: user state changed into LOGIN
+636: enter main ui
+562: enter select button, [2, 6)
+802: =========================START======================
+626: enter start ui
+562: enter select button, [0, 2)
+779: monitor thread starts
+585: ==> return sel: 0
+631: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'bob'
+140: ==> send login message to server
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from not login into login
+655: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'bob'
+635: user state changed into LOGIN
+636: enter main ui
+562: enter select button, [2, 6)
+585: ==> return sel: 2
+602: user select 2
+166: call button handler button_launch_battle
+167: ==> query if user want to invite friend
+169: ==> user answer yes
+170: ==> ask friend's name
+172: ==> friend name 'bob'
+178: ==> send `launch battle` and invitation to server
+605: button handler return 0
+562: enter select button, [2, 6)
+585: ==> return sel: 5
+602: user select 5
+200: call button handler button_logout
+605: button handler return -1
+609: quit main ui with user_state:1
+562: enter select button, [0, 2)
+585: ==> return sel: 1
+631: user select 1@ quit
+160: call button handler button_quit_game
+429: ========================EXIT=======================
+430: 
+
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from not login into login
+655: ==> update user state to screen
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from login into login
+655: ==> update user state to screen
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from login into login
+585: ==> return sel: 5
+602: user select 5
+200: call button handler button_logout
+605: button handler return -1
+609: quit main ui with user_state:1
+562: enter select button, [0, 2)
+585: ==> return sel: 1
+631: user select 1@ quit
+160: call button handler button_quit_game
+802: =========================START======================
+626: enter start ui
+562: enter select button, [0, 2)
+779: monitor thread starts
+802: =========================START======================
+626: enter start ui
+779: monitor thread starts
+562: enter select button, [0, 2)
+585: ==> return sel: 0
+631: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'alice'
+140: ==> send login message to server
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from not login into login
+655: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'alice'
+635: user state changed into LOGIN
+636: enter main ui
+562: enter select button, [2, 6)
+585: ==> return sel: 0
+631: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'bob'
+140: ==> send login message to server
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from not login into login
+655: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'bob'
+635: user state changed into LOGIN
+636: enter main ui
+562: enter select button, [2, 6)
+585: ==> return sel: 2
+602: user select 2
+166: call button handler button_launch_battle
+167: ==> query if user want to invite friend
+169: ==> user answer yes
+170: ==> ask friend's name
+172: ==> friend name 'bob'
+178: ==> send `launch battle` and invitation to server
+605: button handler return 0
+562: enter select button, [2, 6)
+585: ==> return sel: 5
+602: user select 5
+200: call button handler button_logout
+605: button handler return -1
+609: quit main ui with user_state:1
+562: enter select button, [0, 2)
+585: ==> return sel: 0
+631: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'bob'
+140: ==> send login message to server
+782: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+784: ==> call message handler
+650: call message handler serv_response_login_success
+651: ==> try server_say
+653: ==> change user_state from not login into login
+655: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'bob'
+635: user state changed into LOGIN
+636: enter main ui
+562: enter select button, [2, 6)
+585: ==> return sel: 2
+602: user select 2
+166: call button handler button_launch_battle
+167: ==> query if user want to invite friend
+169: ==> user answer yes
+170: ==> ask friend's name
+172: ==> friend name 'alice'
+178: ==> send `launch battle` and invitation to server
+605: button handler return 0
+562: enter select button, [2, 6)
+782: receive server message: SERVER_MESSAGE_INVITE_TO_BATTLE
+784: ==> call message handler
+705: call message handler serv_msg_you_are_invited
+585: ==> return sel: 5
+602: user select 5
+200: call button handler button_logout
+605: button handler return -1
+609: quit main ui with user_state:1
+562: enter select button, [0, 2)
+585: ==> return sel: 1
+631: user select 1@ quit
+160: call button handler button_quit_game
+782: receive server message: SERVER_MESSAGE_INVITE_TO_BATTLE
+429: ========================EXIT=======================
+784: ==> call message handler
+430: 
+
+705: call message handler serv_msg_you_are_invited
+585: ==> return sel: 5
+602: user select 5
+200: call button handler button_logout
+605: button handler return -1
+609: quit main ui with user_state:1
+562: enter select button, [0, 2)
+585: ==> return sel: 1
+631: user select 1@ quit
+160: call button handler button_quit_game
+803: =========================START======================
+807: =========================START======================
+627: enter start ui
+784: monitor thread starts
+563: enter select button, [0, 2)
+577: sel_menu enter command mode
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'alice'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'alice'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 3
+603: user select 3
+190: call button handler button_invite_user
+606: button handler return 0
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+586: ==> return sel: 5
+603: user select 5
+201: call button handler button_logout
+606: button handler return -1
+610: quit main ui with user_state:1
+563: enter select button, [0, 2)
+586: ==> return sel: 1
+632: user select 1@ quit
+160: call button handler button_quit_game
+807: =========================START======================
+627: enter start ui
+784: monitor thread starts
+563: enter select button, [0, 2)
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'alice'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'alice'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+586: ==> return sel: 2
+603: user select 2
+166: call button handler button_launch_battle
+167: ==> query if user want to invite friend
+169: ==> user answer yes
+170: ==> ask friend's name
+172: ==> friend name 'alice'
+178: ==> send `launch battle` and invitation to server
+606: button handler return 0
+563: enter select button, [2, 6)
+787: receive server message: SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE
+586: ==> return sel: 5
+603: user select 5
+201: call button handler button_logout
+606: button handler return -1
+610: quit main ui with user_state:1
+563: enter select button, [0, 2)
+586: ==> return sel: 1
+632: user select 1@ quit
+160: call button handler button_quit_game
+807: =========================START======================
+807: =========================START======================
+627: enter start ui
+784: monitor thread starts
+563: enter select button, [0, 2)
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'alice'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'alice'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+807: =========================START======================
+627: enter start ui
+563: enter select button, [0, 2)
+784: monitor thread starts
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'alice'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'alice'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+807: =========================START======================
+627: enter start ui
+784: monitor thread starts
+563: enter select button, [0, 2)
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'alice'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'alice'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+586: ==> return sel: 5
+603: user select 5
+201: call button handler button_logout
+606: button handler return -1
+610: quit main ui with user_state:1
+563: enter select button, [0, 2)
+586: ==> return sel: 1
+632: user select 1@ quit
+160: call button handler button_quit_game
+430: ========================EXIT=======================
+431: 
+
+807: =========================START======================
+627: enter start ui
+784: monitor thread starts
+563: enter select button, [0, 2)
+807: =========================START======================
+627: enter start ui
+784: monitor thread starts
+563: enter select button, [0, 2)
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'aa'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'aa'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'bb'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'bb'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+577: sel_menu enter command mode
+577: sel_menu enter command mode
+577: sel_menu enter command mode
+586: ==> return sel: 2
+603: user select 2
+166: call button handler button_launch_battle
+167: ==> query if user want to invite friend
+169: ==> user answer yes
+170: ==> ask friend's name
+172: ==> friend name 'aa'
+178: ==> send `launch battle` and invitation to server
+606: button handler return 0
+563: enter select button, [2, 6)
+787: receive server message: SERVER_MESSAGE_INVITE_TO_BATTLE
+789: ==> call message handler
+713: call message handler serv_msg_you_are_invited
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+586: ==> return sel: 5
+603: user select 5
+201: call button handler button_logout
+606: button handler return -1
+787: receive server message: SERVER_MESSAGE_USER_QUIT_BATTLE
+610: quit main ui with user_state:1
+789: ==> call message handler
+563: enter select button, [0, 2)
+719: call message handler serv_msg_friend_quit_battle
+586: ==> return sel: 1
+632: user select 1@ quit
+160: call button handler button_quit_game
+430: ========================EXIT=======================
+431: 
+
+807: =========================START======================
+627: enter start ui
+784: monitor thread starts
+563: enter select button, [0, 2)
+577: sel_menu enter command mode
+586: ==> return sel: 0
+632: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'aa'
+140: ==> send login message to server
+787: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+789: ==> call message handler
+651: call message handler serv_response_login_success
+652: ==> try server_say
+654: ==> change user_state from not login into login
+656: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'aa'
+636: user state changed into LOGIN
+637: enter main ui
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+586: ==> return sel: 4
+603: user select 4
+195: call button handler button_join_battle
+606: button handler return 0
+563: enter select button, [2, 6)
+808: =========================START======================
+628: enter start ui
+785: monitor thread starts
+564: enter select button, [0, 2)
+578: sel_menu enter command mode
+587: ==> return sel: 0
+633: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'aa'
+140: ==> send login message to server
+788: receive server message: SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
+790: ==> call message handler
+663: call message handler serv_response_login_fail_dup_userid
+151: wait until message=3
+153: ==> set user name to 'aa'
+564: enter select button, [0, 2)
+587: ==> return sel: 0
+633: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'xc'
+140: ==> send login message to server
+788: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+790: ==> call message handler
+652: call message handler serv_response_login_success
+653: ==> try server_say
+655: ==> change user_state from not login into login
+657: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'xc'
+637: user state changed into LOGIN
+638: enter main ui
+564: enter select button, [2, 6)
+587: ==> return sel: 3
+604: user select 3
+190: call button handler button_invite_user
+607: button handler return 0
+564: enter select button, [2, 6)
+587: ==> return sel: 5
+604: user select 5
+202: call button handler button_logout
+607: button handler return -1
+611: quit main ui with user_state:1
+564: enter select button, [0, 2)
+587: ==> return sel: 1
+633: user select 1@ quit
+160: call button handler button_quit_game
+431: ========================EXIT=======================
+432: 
+
+835: =========================START======================
+638: enter start ui
+574: enter select button, [0, 2)
+812: monitor thread starts
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'as'
+140: ==> send login message to server
+815: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+817: ==> call message handler
+662: call message handler serv_response_login_success
+663: ==> try server_say
+665: ==> change user_state from not login into login
+667: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'as'
+647: user state changed into LOGIN
+648: enter main ui
+574: enter select button, [2, 6)
+588: sel_menu enter command mode
+588: sel_menu enter command mode
+588: sel_menu enter command mode
+588: sel_menu enter command mode
+815: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+817: ==> call message handler
+695: call message handler serv_response_all_users_info
+703: server response user list: bb, aa, as, 
+597: ==> return sel: 5
+614: user select 5
+202: call button handler button_logout
+617: button handler return -1
+621: quit main ui with user_state:1
+574: enter select button, [0, 2)
+597: ==> return sel: 1
+643: user select 1@ quit
+160: call button handler button_quit_game
+431: ========================EXIT=======================
+432: 
+
+836: =========================START======================
+638: enter start ui
+813: monitor thread starts
+574: enter select button, [0, 2)
+588: sel_menu enter command mode
+816: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+818: ==> call message handler
+695: call message handler serv_response_all_users_info
+704: server response user list: bb, aa
+836: =========================START======================
+836: =========================START======================
+638: enter start ui
+813: monitor thread starts
+574: enter select button, [0, 2)
+588: sel_menu enter command mode
+816: receive server message: SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN
+818: ==> call message handler
+656: call message handler serv_response_you_have_not_login
+588: sel_menu enter command mode
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'aa'
+140: ==> send login message to server
+816: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+818: ==> call message handler
+662: call message handler serv_response_login_success
+663: ==> try server_say
+665: ==> change user_state from not login into login
+667: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'aa'
+647: user state changed into LOGIN
+648: enter main ui
+574: enter select button, [2, 6)
+836: =========================START======================
+638: enter start ui
+813: monitor thread starts
+574: enter select button, [0, 2)
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'vv'
+140: ==> send login message to server
+816: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+818: ==> call message handler
+662: call message handler serv_response_login_success
+663: ==> try server_say
+665: ==> change user_state from not login into login
+667: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'vv'
+647: user state changed into LOGIN
+648: enter main ui
+574: enter select button, [2, 6)
+836: =========================START======================
+638: enter start ui
+574: enter select button, [0, 2)
+813: monitor thread starts
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'tt'
+140: ==> send login message to server
+816: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+818: ==> call message handler
+662: call message handler serv_response_login_success
+663: ==> try server_say
+665: ==> change user_state from not login into login
+667: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'tt'
+647: user state changed into LOGIN
+648: enter main ui
+574: enter select button, [2, 6)
+588: sel_menu enter command mode
+816: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+818: ==> call message handler
+695: call message handler serv_response_all_users_info
+704: server response user list: aa, vv, tt
+836: =========================START======================
+638: enter start ui
+574: enter select button, [0, 2)
+813: monitor thread starts
+597: ==> return sel: 1
+643: user select 1@ quit
+160: call button handler button_quit_game
+431: ========================EXIT=======================
+432: 
+
+836: =========================START======================
+638: enter start ui
+813: monitor thread starts
+574: enter select button, [0, 2)
+597: ==> return sel: 1
+643: user select 1@ quit
+160: call button handler button_quit_game
+431: ========================EXIT=======================
+432: 
+
+836: =========================START======================
+638: enter start ui
+813: monitor thread starts
+574: enter select button, [0, 2)
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'kl'
+140: ==> send login message to server
+816: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+818: ==> call message handler
+662: call message handler serv_response_login_success
+663: ==> try server_say
+665: ==> change user_state from not login into login
+667: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'kl'
+647: user state changed into LOGIN
+648: enter main ui
+574: enter select button, [2, 6)
+588: sel_menu enter command mode
+816: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+818: ==> call message handler
+695: call message handler serv_response_all_users_info
+704: server response user list: aa, vv, tt, kl
+588: sel_menu enter command mode
+588: sel_menu enter command mode
+588: sel_menu enter command mode
+588: sel_menu enter command mode
+597: ==> return sel: 5
+614: user select 5
+202: call button handler button_logout
+617: button handler return -1
+621: quit main ui with user_state:1
+574: enter select button, [0, 2)
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'aa'
+140: ==> send login message to server
+816: receive server message: SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
+818: ==> call message handler
+673: call message handler serv_response_login_fail_dup_userid
+151: wait until message=3
+153: ==> set user name to 'aa'
+574: enter select button, [0, 2)
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'aa'
+140: ==> send login message to server
+816: receive server message: SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
+818: ==> call message handler
+673: call message handler serv_response_login_fail_dup_userid
+151: wait until message=3
+153: ==> set user name to 'aa'
+574: enter select button, [0, 2)
+597: ==> return sel: 0
+643: user select 0@login
+128: call button handler button_login
+129: ==> require name
+132: ==> input name 'ss'
+140: ==> send login message to server
+816: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+818: ==> call message handler
+662: call message handler serv_response_login_success
+663: ==> try server_say
+665: ==> change user_state from not login into login
+667: ==> update user state to screen
+151: wait until message=0
+153: ==> set user name to 'ss'
+647: user state changed into LOGIN
+648: enter main ui
+574: enter select button, [2, 6)
+588: sel_menu enter command mode
+816: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+818: ==> call message handler
+695: call message handler serv_response_all_users_info
+704: server response user list: aa, vv, tt, ss
+588: sel_menu enter command mode
+588: sel_menu enter command mode
+597: ==> return sel: 5
+614: user select 5
+202: call button handler button_logout
+617: button handler return -1
+621: quit main ui with user_state:1
+574: enter select button, [0, 2)
+597: ==> return sel: 1
+643: user select 1@ quit
+160: call button handler button_quit_game
+431: ========================EXIT=======================
+432: 
+
+597: ==> return sel: 5
+614: user select 5
+202: call button handler button_logout
+617: button handler return -1
+621: quit main ui with user_state:1
+574: enter select button, [0, 2)
+597: ==> return sel: 1
+643: user select 1@ quit
+160: call button handler button_quit_game
+431: ========================EXIT=======================
+432: 
+
+597: ==> return sel: 5
+614: user select 5
+202: call button handler button_logout
+617: button handler return -1
+621: quit main ui with user_state:1
+574: enter select button, [0, 2)
+588: sel_menu enter command mode
+431: ========================EXIT=======================
+432: 
+
+597: ==> return sel: 2
+614: user select 2
+166: call button handler button_launch_battle
+167: ==> query if user want to invite friend
+181: ==> user reject to invite friend
+182: ==> send `launch battle` message to server
+617: button handler return 0
+574: enter select button, [2, 6)
+816: receive server message: SERVER_MESSAGE_FRIEND_NOT_LOGIN
+818: ==> call message handler
+728: call message handler serv_msg_friend_not_login
+597: ==> return sel: 5
+614: user select 5
+202: call button handler button_logout
+617: button handler return -1
+621: quit main ui with user_state:1
+574: enter select button, [0, 2)
+597: ==> return sel: 1
+643: user select 1@ quit
+160: call button handler button_quit_game
+431: ========================EXIT=======================
+432: 
+
+914: =========================START======================
+698: enter start ui
+890: monitor thread starts
+634: enter select button, [0, 2)
+657: ==> return sel: 0
+703: user select 0@login
+139: call button handler button_login
+140: ==> require name
+143: ==> input name 'ulist'
+151: ==> send login message to server
+893: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+895: ==> call message handler
+722: call message handler serv_response_login_success
+723: ==> try server_say
+725: ==> change user_state from not login into login
+727: ==> update user state to screen
+162: wait until message=0
+164: ==> set user name to 'ulist'
+707: user state changed into LOGIN
+708: enter main ui
+634: enter select button, [2, 6)
+648: sel_menu enter command mode
+489: accept command: 'ulist'
+893: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+895: ==> call message handler
+755: call message handler serv_response_all_users_info
+764: server response user list: ulist
+657: ==> return sel: 5
+674: user select 5
+213: call button handler button_logout
+677: button handler return -1
+681: quit main ui with user_state:1
+634: enter select button, [0, 2)
+657: ==> return sel: 1
+703: user select 1@ quit
+171: call button handler button_quit_game
+442: ========================EXIT=======================
+
+
+914: =========================START======================
+698: enter start ui
+890: monitor thread starts
+634: enter select button, [0, 2)
+657: ==> return sel: 0
+703: user select 0@login
+139: call button handler button_login
+140: ==> require name
+143: ==> input name 'aa'
+151: ==> send login message to server
+893: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+895: ==> call message handler
+722: call message handler serv_response_login_success
+723: ==> try server_say
+725: ==> change user_state from not login into login
+727: ==> update user state to screen
+162: wait until message=0
+164: ==> set user name to 'aa'
+707: user state changed into LOGIN
+708: enter main ui
+634: enter select button, [2, 6)
+648: sel_menu enter command mode
+489: accept command: 'ulist'
+893: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+895: ==> call message handler
+755: call message handler serv_response_all_users_info
+764: server response user list: aa
+657: ==> return sel: 5
+674: user select 5
+213: call button handler button_logout
+677: button handler return -1
+681: quit main ui with user_state:1
+634: enter select button, [0, 2)
+657: ==> return sel: 1
+703: user select 1@ quit
+171: call button handler button_quit_game
+442: ========================EXIT=======================
+
+
+915: =========================START======================
+699: enter start ui
+891: monitor thread starts
+635: enter select button, [0, 2)
+658: ==> return sel: 0
+704: user select 0@login
+139: call button handler button_login
+140: ==> require name
+143: ==> input name 'as'
+151: ==> send login message to server
+894: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+896: ==> call message handler
+723: call message handler serv_response_login_success
+724: ==> try server_say
+726: ==> change user_state from not login into login
+728: ==> update user state to screen
+162: wait until message=0
+164: ==> set user name to 'as'
+708: user state changed into LOGIN
+709: enter main ui
+635: enter select button, [2, 6)
+649: sel_menu enter command mode
+489: accept command: 'ulist'
+894: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+896: ==> call message handler
+756: call message handler serv_response_all_users_info
+765: server response user list: as
+649: sel_menu enter command mode
+489: accept command: 'quit'
+442: ========================EXIT=======================
+
+
+920: =========================START======================
+704: enter start ui
+640: enter select button, [0, 2)
+896: monitor thread starts
+663: ==> return sel: 0
+709: user select 0@login
+139: call button handler button_login
+140: ==> require name
+143: ==> input name 'as'
+151: ==> send login message to server
+899: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+901: ==> call message handler
+728: call message handler serv_response_login_success
+729: ==> try server_say
+731: ==> change user_state from not login into login
+733: ==> update user state to screen
+162: wait until message=0
+164: ==> set user name to 'as'
+713: user state changed into LOGIN
+714: enter main ui
+640: enter select button, [2, 6)
+654: sel_menu enter command mode
+489: accept command: 'ulist'
+899: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+901: ==> call message handler
+761: call message handler serv_response_all_users_info
+770: server response user list: as
+654: sel_menu enter command mode
+489: accept command: 'quit'
+442: ========================EXIT=======================
+
+
+919: =========================START======================
+703: enter start ui
+639: enter select button, [0, 2)
+895: monitor thread starts
+653: sel_menu enter command mode
+489: accept command: ''
+662: ==> return sel: 0
+708: user select 0@login
+139: call button handler button_login
+140: ==> require name
+143: ==> input name 'as'
+151: ==> send login message to server
+898: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+900: ==> call message handler
+727: call message handler serv_response_login_success
+728: ==> try server_say
+730: ==> change user_state from not login into login
+732: ==> update user state to screen
+162: wait until message=0
+164: ==> set user name to 'as'
+712: user state changed into LOGIN
+713: enter main ui
+639: enter select button, [2, 6)
+653: sel_menu enter command mode
+489: accept command: 'ulist'
+898: receive server message: SERVER_RESPONSE_ALL_USERS_INFO
+900: ==> call message handler
+760: call message handler serv_response_all_users_info
+769: server response user list: as
+662: ==> return sel: 5
+679: user select 5
+213: call button handler button_logout
+682: button handler return -1
+686: quit main ui with user_state:1
+639: enter select button, [0, 2)
+662: ==> return sel: 1
+708: user select 1@ quit
+171: call button handler button_quit_game
+442: ========================EXIT=======================
+
+
+927: =========================START======================
+700: enter start ui
+903: monitor thread starts
+636: enter select button, [0, 2)
+659: ==> return sel: 0
+705: user select 0@login
+138: call button handler button_login
+139: ==> require name
+142: ==> input name 'aa'
+150: ==> send login message to server
+906: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+908: ==> call message handler
+724: call message handler serv_response_login_success
+725: ==> try server_say
+727: ==> change user_state from not login into login
+729: ==> update user state to screen
+161: wait until message=0
+163: ==> set user name to 'aa'
+709: user state changed into LOGIN
+710: enter main ui
+636: enter select button, [2, 6)
+927: =========================START======================
+700: enter start ui
+903: monitor thread starts
+636: enter select button, [0, 2)
+659: ==> return sel: 0
+705: user select 0@login
+138: call button handler button_login
+139: ==> require name
+142: ==> input name 'bb'
+150: ==> send login message to server
+906: receive server message: (null)
+906: receive server message: SERVER_RESPONSE_LOGIN_SUCCESS
+908: ==> call message handler
+778: call message handler serv_msg_friend_login
+908: ==> call message handler
+724: call message handler serv_response_login_success
+725: ==> try server_say
+727: ==> change user_state from not login into login
+729: ==> update user state to screen
+161: wait until message=0
+163: ==> set user name to 'bb'
+709: user state changed into LOGIN
+710: enter main ui
+636: enter select button, [2, 6)
+659: ==> return sel: 5
+676: user select 5
+212: call button handler button_logout
+679: button handler return -1
+906: receive server message: (null)
+908: ==> call message handler
+791: call message handler serv_msg_friend_logout
+683: quit main ui with user_state:1
+636: enter select button, [0, 2)

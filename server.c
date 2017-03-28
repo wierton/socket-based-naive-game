@@ -167,6 +167,19 @@ int get_unused_session() {
 	return ret_session_id;
 }
 
+void inform_friends(int session_id, int message) {
+	server_message_t sm;
+	char *user_name = sessions[session_id].user_name;
+	memset(&sm, 0, sizeof(server_message_t));
+	sm.message = message;
+	for(int i = 0; i < USER_CNT; i++) {
+		if(i == session_id || !query_session_built(i))
+			continue;
+		strncpy(sm.friend_name, user_name, USERNAME_SIZE - 1);
+		wrap_send(sessions[i].conn, &sm);
+	}
+}
+
 int client_command_user_login(int session_id) {
 	int is_dup = 0;
 	int conn = sessions[session_id].conn;
@@ -201,31 +214,57 @@ int client_command_user_login(int session_id) {
 		sessions[session_id].state = USER_STATE_LOGIN;
 		send_to_client(conn, SERVER_RESPONSE_LOGIN_SUCCESS);
 		strncpy(sessions[session_id].user_name, user_name, USERNAME_SIZE - 1);
+		inform_friends(session_id, SERVER_MESSAGE_FRIEND_LOGIN);
 	}
 
 	return 0;
+}
+
+int client_command_user_logout(int session_id) {
+	if(sessions[session_id].state == USER_STATE_BATTLE
+	|| sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
+		log("user %d@%s trys to logout was in battle\n", session_id, sessions[session_id].user_name);
+		user_quit_battle(sessions[session_id].battle_id, session_id);
+	}
+
+	log("user %d@%s logout\n", session_id, sessions[session_id].user_name);
+	sessions[session_id].state = USER_STATE_NOT_LOGIN;
+	inform_friends(session_id, SERVER_MESSAGE_FRIEND_LOGOUT);
+	return 0;
+}
+
+void list_all_users(server_message_t *psm) {
+	for(int i = 0; i < USER_CNT; i++) {
+		if(query_session_built(i)) {
+			log("%s: found '%s' %s\n", __func__, sessions[i].user_name,
+					sessions[i].state == USER_STATE_BATTLE ? "in battle" : "");
+			psm->all_users[i].user_state = sessions[i].state;
+			strncpy(psm->all_users[i].user_name, sessions[i].user_name, USERNAME_SIZE - 1);
+		}
+	}
 }
 
 int client_command_fetch_all_users(int session_id) {
 	int conn = sessions[session_id].conn;
 	char *user_name = sessions[session_id].user_name;
-	log("user '%s' trys to fetch all users' info\n", user_name);
+	log("user %d@'%s' tries to fetch all users' info\n", session_id, user_name);
+
+	if(!query_session_built(session_id)) {
+		logi("user %d@'%s' who tries to list users hasn't login\n", session_id, user_name);
+		send_to_client(conn, SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN);
+		return 0;
+	}
+
 	server_message_t sm;
 	memset(&sm, 0, sizeof(server_message_t));
+	list_all_users(&sm);
 	sm.response = SERVER_RESPONSE_ALL_USERS_INFO;
-	for(int i = 0; i < USER_CNT; i++) {
-		if(query_session_built(i)) {
-			logi("found '%s' %s\n", sessions[i].user_name,
-					sessions[i].state == USER_STATE_BATTLE ? "in battle" : "");
-			sm.all_users[i].user_state = sessions[i].state;
-			strncpy(sm.all_users[i].user_name, sessions[i].user_name, USERNAME_SIZE - 1);
-		}
-	}
 
 	wrap_send(conn, &sm);
 
 	return 0;
 }
+
 
 int invite_friend_to_battle(int battle_id, int user_id, int friend_id) {
 	int conn = sessions[user_id].conn;
@@ -241,6 +280,7 @@ int invite_friend_to_battle(int battle_id, int user_id, int friend_id) {
 
 		user_join_battle(battle_id, user_id);
 		user_invited_to_join_battle(battle_id, friend_id);
+		// WARNING: can't move this statement
 		sessions[friend_id].inviter_id = user_id;
 
 		server_message_t sm;
@@ -257,9 +297,11 @@ int client_command_launch_battle(int session_id) {
 	int conn = sessions[session_id].conn;
 
 	if(sessions[session_id].state == USER_STATE_BATTLE) {
-		log("user '%s' who try to launch battle has been in battle\n", sessions[session_id].user_name);
+		log("user '%s' who tries to launch battle has been in battle\n", sessions[session_id].user_name);
 		send_to_client(conn, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
 		return 0;
+	}else{
+		log("user '%s' tries to launch battle\n", sessions[session_id].user_name);
 	}
 
 	int battle_id = get_unalloced_battle();
@@ -274,6 +316,9 @@ int client_command_launch_battle(int session_id) {
 		return 0;
 	}else if(friend_id == session_id){
 		logi("launch battle %d for %s\n", battle_id, sessions[session_id].user_name);
+		sessions[session_id].battle_id = battle_id;
+		sessions[session_id].inviter_id = session_id;
+		sessions[session_id].state = USER_STATE_BATTLE;
 	}else{
 		logi("launch battle %d for %s, invite %s\n", battle_id, sessions[session_id].user_name, pcm->user_name);
 		sessions[session_id].battle_id = battle_id;
@@ -309,7 +354,6 @@ int client_command_invite_user(int session_id) {
 }
 
 int client_command_accept_battle(int session_id) {
-	sessions[session_id].state = USER_STATE_BATTLE;
 	log("user %s accept battle #%d\n", sessions[session_id].user_name, sessions[session_id].battle_id);
 
 	if(sessions[session_id].state == USER_STATE_BATTLE) {
@@ -318,12 +362,21 @@ int client_command_accept_battle(int session_id) {
 	}else if(sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
 		int inviter_id = sessions[session_id].inviter_id;
 
-		logi("accept success\n");
 		server_message_t sm;
 		memset(&sm, 0, sizeof(server_message_t));
 		sm.message = SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE;
 		strncpy(sm.friend_name, sessions[inviter_id].user_name, USERNAME_SIZE - 1);
-		wrap_send(inviter_id, &sm);
+
+		int battle_id = sessions[session_id].battle_id;
+		if(battles[battle_id].is_alloced) {
+			wrap_send(inviter_id, &sm);
+			sessions[session_id].state = USER_STATE_BATTLE;
+			logi("accept success\n");
+		}else{
+			logi("user %s accept battle which didn't exist\n", sessions[session_id].user_name);
+			send_to_client(session_id, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
+		}
+
 	}else{
 		logi("hasn't been invited\n");
 		send_to_client(session_id, SERVER_RESPONSE_NOBODY_INVITE_YOU);
@@ -358,18 +411,6 @@ int client_command_quit(int session_id) {
 	return -1;
 }
 
-int client_command_logout(int session_id) {
-	if(sessions[session_id].state == USER_STATE_BATTLE
-	|| sessions[session_id].state == USER_STATE_WAIT_TO_BATTLE) {
-		log("user %d@%s trys to logout was in battle\n", session_id, sessions[session_id].user_name);
-		user_quit_battle(sessions[session_id].battle_id, session_id);
-	}
-
-	log("user %d@%s logout\n", session_id, sessions[session_id].user_name);
-	sessions[session_id].state = USER_STATE_NOT_LOGIN;
-	return 0;
-}
-
 int client_command_move_up(int session_id) {
 	return 0;
 }
@@ -393,11 +434,13 @@ int client_command_fire(int session_id) {
 static int(*handler[])(int) = {
 	[CLIENT_COMMAND_USER_QUIT] = client_command_quit,
 	[CLIENT_COMMAND_USER_LOGIN] = client_command_user_login,
+	[CLIENT_COMMAND_USER_LOGOUT] = client_command_user_logout,
 	[CLIENT_COMMAND_FETCH_ALL_USERS] = client_command_fetch_all_users,
 	[CLIENT_COMMAND_LAUNCH_BATTLE] = client_command_launch_battle,
 	[CLIENT_COMMAND_QUIT_BATTLE] = client_command_quit_battle,
+	[CLIENT_COMMAND_ACCEPT_BATTLE] = client_command_accept_battle,
+	[CLIENT_COMMAND_REJECT_BATTLE] = client_command_reject_battle,
 	[CLIENT_COMMAND_INVITE_USER] = client_command_invite_user,
-	[CLIENT_COMMAND_LOGOUT] = client_command_logout,
 	[CLIENT_COMMAND_MOVE_UP] = client_command_move_up,
 	[CLIENT_COMMAND_MOVE_DOWN] = client_command_move_down,
 	[CLIENT_COMMAND_MOVE_LEFT] = client_command_move_left,
@@ -461,6 +504,7 @@ void *session_start(void *args) {
 			continue;
 
 		int ret_code = handler[pcm->command](session_id);
+		log("state of user '%s': %d\n", sessions[session_id].user_name, sessions[session_id].state);
 		if(ret_code < 0) {
 			log("close session #%d\n", session_id);
 			break;

@@ -293,6 +293,8 @@ G] main:512: connected by 127.0.0.1:29852
 [LOG] client_command_launch_battle:278: ==> launch battle 0 for alice, invite aaaaa
 [LOG] invite_friend_to_battle:234: ==> friend '' hasn't login
 [LOG] client_command_logout:368: user 1@alice logout
+
+
 [LOG] client_command_user_login:183: user 'alice' try to login
 [LOG] client_command_user_login:186: ==> check dup user id: 'alice' vs. 'aaaaaa'
 [LOG] client_command_user_login:200: user 'alice' login success
