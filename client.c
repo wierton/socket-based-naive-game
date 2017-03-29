@@ -758,6 +758,7 @@ void draw_button_in_start_ui() {
 
 void start_ui() {
 	wlog("enter start ui\n");
+	bottom_bar_output(0, "[help] type <TAB>");
 	while(1) {
 		draw_button_in_start_ui();
 		display_user_state();
