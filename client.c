@@ -464,14 +464,24 @@ int cmd_ulist(char *args) {
 	return 0;
 }
 
+int cmd_invite(char *args) {
+	client_message_t cm;
+	cm.command = CLIENT_COMMAND_INVITE_USER;
+	strncpy(cm.user_name, args, USERNAME_SIZE - 1);
+	wrap_send(&cm);
+	return 0;
+}
+
 int cmd_help(char *args) {
 	if(args) {
 		if(strcmp(args, "--list") == 0) {
-			bottom_bar_output(0, "quit, help, ulist");
+			bottom_bar_output(0, "quit, help, ulist, invite");
 		}else if(strcmp(args, "quit") == 0) {
 			bottom_bar_output(0, "quit the game and return terminal");
 		}else if(strcmp(args, "ulist") == 0) {
 			bottom_bar_output(0, "list all online friends");
+		}else if(strcmp(args, "invite") == 0) {
+			bottom_bar_output(0, "invite friend to your battle");
 		}else{
 			bottom_bar_output(0, "no help for '%s'", args);
 		}
@@ -487,6 +497,8 @@ static struct {
 } command_handler[] = {
 	{"quit", cmd_quit},
 	{"ulist", cmd_ulist},
+	{"invite", cmd_invite},
+	/* ------------------- */
 	{"help", cmd_help},
 };
 
@@ -649,7 +661,7 @@ void run_battle() {
 			send_command(CLIENT_COMMAND_QUIT_BATTLE);
 			break;
 		}else if(ch == ':') {
-			// do something
+			read_and_execute_command();
 		}
 
 		switch(ch) {
@@ -839,6 +851,12 @@ int serv_response_nobody_invite_you(server_message_t *psm) {
 	return 0;
 }
 
+int serv_response_invitation_sent(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("invitation has been sent");
+	return 0;
+}
+
 int serv_msg_friend_login(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	for(int i = 0; i < USER_CNT; i++) {
@@ -1002,6 +1020,12 @@ int serv_msg_battle_info(server_message_t *psm) {
 	// FIXME:
 	wlog("call message handler %s\n", __func__);
 	if(user_state == USER_STATE_BATTLE) {
+		if(pthread_mutex_trylock(&cursor_lock) < 0) {
+			return 0;
+		}else{
+			pthread_mutex_unlock(&cursor_lock);
+		}
+
 		log_psm_info(psm);
 		user_hp = psm->life;
 		flip_old_items(psm);
@@ -1048,6 +1072,7 @@ static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_RESPONSE_LAUNCH_BATTLE_FAIL] = serv_response_launch_battle_fail,
 	[SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS] = serv_response_launch_battle_success,
 	[SERVER_RESPONSE_NOBODY_INVITE_YOU] = serv_response_nobody_invite_you,
+	[SERVER_RESPONSE_INVITATION_SENT] = serv_response_invitation_sent,
 	[SERVER_MESSAGE_FRIEND_LOGIN] = serv_msg_friend_login,
 	[SERVER_MESSAGE_FRIEND_LOGOUT] = serv_msg_friend_logout,
 	[SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE] = serv_msg_accept_battle,

@@ -85,7 +85,7 @@ void user_quit_battle(uint32_t bid, uint32_t uid) {
 				server_message_t sm;
 				memset(&sm, 0, sizeof(server_message_t));
 				sm.message = SERVER_MESSAGE_USER_QUIT_BATTLE;
-				strncpy(sm.friend_name, sessions[i].user_name, USERNAME_SIZE - 1);
+				strncpy(sm.friend_name, sessions[uid].user_name, USERNAME_SIZE - 1);
 
 				wrap_send(sessions[i].conn, &sm);
 			}
@@ -500,16 +500,24 @@ int client_command_fetch_all_friends(int uid) {
 }
 
 
-int invite_friend_to_battle(int bid, int uid, int friend_id) {
+int invite_friend_to_battle(int bid, int uid, char *friend_name) {
 	int conn = sessions[uid].conn;
-	char *friend_name = sessions[friend_id].user_name;
+	int friend_id = find_uid_by_user_name(friend_name);
 	if(friend_id == -1) {
+		// fail to find friend
 		logi("friend '%s' hasn't login\n", friend_name);
 		send_to_client(conn, SERVER_MESSAGE_FRIEND_NOT_LOGIN);
+	}else if(friend_id == uid){
+		logi("launch battle %d for %s\n", bid, sessions[uid].user_name);
+		sessions[uid].inviter_id = uid;
+		user_join_battle(bid, uid);
+		send_to_client(conn, SERVER_RESPONSE_INVITATION_SENT);
 	}else if(sessions[friend_id].state == USER_STATE_BATTLE) {
+		// friend already in battle
 		logi("friend '%s' already in battle\n", friend_name);
 		send_to_client(conn, SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE);
 	}else{
+		// invite friend
 		logi("friend %d@'%s' found\n", friend_id, friend_name);
 
 		user_join_battle(bid, uid);
@@ -540,7 +548,6 @@ int client_command_launch_battle(int uid) {
 
 	int bid = get_unalloced_battle();
 	client_message_t *pcm = &sessions[uid].cm;
-	int friend_id = find_uid_by_user_name(pcm->user_name);
 
 	log("%s launch battle with %s\n", sessions[uid].user_name, pcm->user_name);
 
@@ -548,15 +555,9 @@ int client_command_launch_battle(int uid) {
 		loge("fail to create battle for %s and %s\n", sessions[uid].user_name, pcm->user_name);
 		send_to_client(conn, SERVER_RESPONSE_LAUNCH_BATTLE_FAIL);
 		return 0;
-	}else if(friend_id == uid){
-		logi("launch battle %d for %s\n", bid, sessions[uid].user_name);
-		sessions[uid].inviter_id = uid;
-		launch_battle(bid);
-		user_join_battle(bid, uid);
-		send_to_client(conn, SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS);
 	}else{
 		logi("launch battle %d for %s, invite %s\n", bid, sessions[uid].user_name, pcm->user_name);
-		invite_friend_to_battle(bid, uid, friend_id);
+		invite_friend_to_battle(bid, uid, pcm->user_name);
 		launch_battle(bid);
 		user_join_battle(bid, uid);
 		send_to_client(conn, SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS);
@@ -584,8 +585,7 @@ int client_command_invite_user(int uid) {
 		send_to_client(sessions[uid].conn, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
 	}else{
 		logi("invite user %s to battle #%d\n", sessions[friend_id].user_name, bid);
-		sessions[friend_id].bid = bid;
-		invite_friend_to_battle(bid, uid, friend_id);
+		invite_friend_to_battle(bid, uid, pcm->user_name);
 	}
 	return 0;
 }
