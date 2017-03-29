@@ -323,6 +323,22 @@ int keyboard_detected() {
 	return 0;
 }
 
+void save_cursor_pos() {
+	printf("\033[s");
+}
+
+void load_cursor_pos() {
+	printf("\033u");
+}
+
+void lock_cursor() {
+	pthread_mutex_lock(&cursor_lock);
+}
+
+void unlock_cursor() {
+	pthread_mutex_unlock(&cursor_lock);
+}
+
 void init_scr_wh() {
 	struct winsize ws;
 	ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
@@ -336,6 +352,7 @@ char *readline() {
 	int line_ptr = 0;
 	char line[LINE_MAX_LEN];
 	memset(line, 0, sizeof(line));
+	lock_cursor();
 	echo_off();
 	disable_buffer();
 	while((ch = fgetc(stdin)) != '\n') {
@@ -357,7 +374,7 @@ char *readline() {
 		}
 	}
 	line[line_ptr] = 0;
-	echo_on();
+	unlock_cursor();
 	return strdup(line);
 }
 
@@ -377,7 +394,7 @@ char *sformat(const char *format, ...) {
 
 void bottom_bar_output(int line, const char *format, ...) {
 	assert(line <= 0);
-	pthread_mutex_lock(&cursor_lock);
+	lock_cursor();
 	set_cursor(1, SCR_H - 1 + line);
 	for(int i = 0; i < scr_actual_w; i++)
 		printf(" ");
@@ -390,7 +407,7 @@ void bottom_bar_output(int line, const char *format, ...) {
 
 	fflush(stdout);
 
-	pthread_mutex_unlock(&cursor_lock);
+	unlock_cursor();
 }
 
 void write_log(const char *format, ...) {
@@ -523,16 +540,10 @@ void read_and_execute_command() {
 }
 
 void flip_screen() {
-	pthread_mutex_lock(&cursor_lock);
-	set_cursor(0, 0);
-	for(int i = 0; i < SCR_H - 2; i++) {
-		for(int j = 0; j < SCR_W; j++) {
-			printf(" ");
-		}
-		printf("\n");
-	}
-
-	pthread_mutex_unlock(&cursor_lock);
+	lock_cursor();
+	set_cursor(0, SCR_H + 1);
+	printf("\033[2J");
+	unlock_cursor();
 }
 
 void draw_button(uint32_t button_id) {
@@ -540,7 +551,7 @@ void draw_button(uint32_t button_id) {
 	int y = buttons[button_id].pos.y;
 	const char *s = buttons[button_id].s;
 	int len = strlen(s);
-	pthread_mutex_lock(&cursor_lock);
+	lock_cursor();
 	set_cursor(x, y);
 	printf("┌");
 	for(int i = 0; i < len; i++)
@@ -555,7 +566,7 @@ void draw_button(uint32_t button_id) {
 	for(int i = 0; i < len; i++)
 		printf("─");
 	printf("┘");
-	pthread_mutex_unlock(&cursor_lock);
+	unlock_cursor();
 }
 
 void draw_selected_button(uint32_t button_id) {
@@ -563,7 +574,7 @@ void draw_selected_button(uint32_t button_id) {
 	int y = buttons[button_id].pos.y;
 	const char *s = buttons[button_id].s;
 	int len = strlen(s);
-	pthread_mutex_lock(&cursor_lock);
+	lock_cursor();
 	set_cursor(x, y);
 	printf("\033[1m");
 	printf("┏");
@@ -580,7 +591,7 @@ void draw_selected_button(uint32_t button_id) {
 		printf("━");
 	printf("┛");
 	printf("\033[0m");
-	pthread_mutex_unlock(&cursor_lock);
+	unlock_cursor();
 }
 
 void draw_catalog(catalog_t *pcl) {
@@ -590,7 +601,7 @@ void draw_catalog(catalog_t *pcl) {
 	int w = len;
 	if(len < USERNAME_SIZE) w = USERNAME_SIZE;
 
-	pthread_mutex_lock(&cursor_lock);
+	lock_cursor();
 	set_cursor(x, y);
 	printf("┌");
 	for(int i = 0; i < len; i++)
@@ -635,7 +646,7 @@ void draw_catalog(catalog_t *pcl) {
 
 	fflush(stdout);
 
-	pthread_mutex_unlock(&cursor_lock);
+	unlock_cursor();
 }
 
 int match_char(char ch) {
@@ -931,7 +942,7 @@ int serv_msg_battle_disbanded(server_message_t *psm) {
 void flip_old_items(server_message_t *psm) {
 	static server_message_t sm = {0};
 	wlog("call flip old items\n");
-	pthread_mutex_lock(&cursor_lock);
+	lock_cursor();
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sm.user_pos[i].x == 256
 		|| sm.user_pos[i].y == 256)
@@ -952,12 +963,12 @@ void flip_old_items(server_message_t *psm) {
 
 	fflush(stdout);
 
-	pthread_mutex_unlock(&cursor_lock);
+	unlock_cursor();
 	memcpy(&sm, psm, sizeof(server_message_t));
 }
 
 void draw_users(server_message_t *psm) {
-	pthread_mutex_lock(&cursor_lock);
+	lock_cursor();
 	for(int i = 0; i < USER_CNT; i++) {
 		if(psm->user_pos[i].x == 256
 		|| psm->user_pos[i].y == 256)
@@ -971,11 +982,11 @@ void draw_users(server_message_t *psm) {
 	}
 
 	fflush(stdout);
-	pthread_mutex_unlock(&cursor_lock);
+	unlock_cursor();
 }
 
 void draw_items(server_message_t *psm) {
-	pthread_mutex_lock(&cursor_lock);
+	lock_cursor();
 	for(int i = 0; i < MAX_ITEM; i++) {
 		if(psm->item_kind[i] == ITEM_NONE)
 			continue;
@@ -992,7 +1003,7 @@ void draw_items(server_message_t *psm) {
 
 	fflush(stdout);
 
-	pthread_mutex_unlock(&cursor_lock);
+	unlock_cursor();
 }
 
 void log_psm_info(server_message_t *psm) {
@@ -1020,12 +1031,6 @@ int serv_msg_battle_info(server_message_t *psm) {
 	// FIXME:
 	wlog("call message handler %s\n", __func__);
 	if(user_state == USER_STATE_BATTLE) {
-		if(pthread_mutex_trylock(&cursor_lock) < 0) {
-			return 0;
-		}else{
-			pthread_mutex_unlock(&cursor_lock);
-		}
-
 		log_psm_info(psm);
 		user_hp = psm->life;
 		flip_old_items(psm);
