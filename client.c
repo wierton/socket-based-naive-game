@@ -671,7 +671,7 @@ void run_battle() {
 			user_state = USER_STATE_LOGIN;
 			send_command(CLIENT_COMMAND_QUIT_BATTLE);
 			break;
-		}else if(ch == ':') {
+		}else if(ch == '\t') {
 			read_and_execute_command();
 		}
 
@@ -945,8 +945,8 @@ void flip_old_items(server_message_t *psm) {
 	wlog("call flip old items\n");
 	lock_cursor();
 	for(int i = 0; i < USER_CNT; i++) {
-		if(sm.user_pos[i].x == 256
-		|| sm.user_pos[i].y == 256)
+		if(sm.user_pos[i].x == 255
+		|| sm.user_pos[i].y == 255)
 			continue;
 
 		wlog("clear user %d@(%d, %d)\n", i, sm.user_pos[i].x, sm.user_pos[i].y);

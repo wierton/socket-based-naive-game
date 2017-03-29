@@ -128,7 +128,7 @@
 
 #define MAX_ITEM 30
 
-#define PORT 50000
+#define PORT 40000
 
 enum {
 	CLIENT_COMMAND_USER_QUIT,
