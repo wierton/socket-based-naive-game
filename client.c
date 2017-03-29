@@ -822,6 +822,9 @@ int serv_response_all_users_info(server_message_t *psm) {
 			len += sprintf(users + len, "%s, ", psm->all_users[i].user_name);
 		}
 	}
+	if(len > sizeof(users) - 1)
+		eprintf("buffer overflow\n");
+
 	users[len - 2] = 0;
 	wlog("server response user list: %s\n", users);
 	bottom_bar_output(0, "online: %s", users);
@@ -1028,6 +1031,9 @@ void log_psm_info(server_message_t *psm) {
 
 	len += sprintf(p + len, "\n");
 
+	if(len > sizeof(s) - 1)
+		eprintf("buffer overflow\n");
+
 	wlog("battle info:\n%s\n", s);
 }
 
@@ -1067,7 +1073,7 @@ int serv_msg_you_are_shooted(server_message_t *psm) {
 
 int serv_msg_you_are_trapped_in_magma(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
-	server_say("you're trapped in magma");
+	server_say("you're burned by magma");
 	return 0;
 }
 
