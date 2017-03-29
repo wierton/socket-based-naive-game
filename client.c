@@ -15,6 +15,7 @@
 static int scr_actual_w = 0;
 static int scr_actual_h = 0;
 
+static int user_hp = 0;
 static int user_state = USER_STATE_NOT_LOGIN;
 static char *user_name = "<unknown>";
 static char *user_state_s[] = {
@@ -194,6 +195,13 @@ int button_launch_battle() {
 		wlogi("send `launch battle` message to server\n");
 		send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
 	}
+
+	do {
+		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
+		|| global_serv_message == SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE)
+			break;
+	} while(1);
+	wlog("wait until message=%d\n", global_serv_message);
 
 	return 0;
 }
@@ -397,7 +405,7 @@ void write_log(const char *format, ...) {
 
 void display_user_state() {
 	assert(user_state <= sizeof(user_state_s) / sizeof(user_state_s[0]));
-	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, 0, user_state_s[user_state]);
+	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, user_hp, user_state_s[user_state]);
 }
 
 void server_say(const char *message) {
@@ -629,9 +637,27 @@ int match_char(char ch) {
 }
 
 void run_battle() {
+	wlog("run battle\n");
+	echo_off();
+	disable_buffer();
 	while(1) {
-		sleep(1);
+		int ch = fgetc(stdin);
+		if(ch == 'q') {
+			break;
+		}else if(ch == ':') {
+			// do something
+		}
+
+		switch(ch) {
+			case 'w':send_command(CLIENT_COMMAND_MOVE_UP);break;
+			case 's':send_command(CLIENT_COMMAND_MOVE_DOWN);break;
+			case 'a':send_command(CLIENT_COMMAND_MOVE_LEFT);break;
+			case 'd':send_command(CLIENT_COMMAND_MOVE_RIGHT);break;
+			case ' ':send_command(CLIENT_COMMAND_FIRE);break;
+		}
 	}
+
+	wlog("exit run_battle\n");
 }
 
 int switch_selected_button_respond_to_key(int st, int ed) {
@@ -789,6 +815,19 @@ int serv_response_all_friends_info(server_message_t *psm) {
 	return 0;
 }
 
+int serv_response_fail_to_create_battle(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("launch battle failed");
+	return 0;
+}
+
+int serv_response_launch_battle_success(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("launch battle success");
+	user_state = USER_STATE_BATTLE;
+	return 0;
+}
+
 int serv_response_nobody_invite_you(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	server_say("no body invite you");
@@ -864,16 +903,129 @@ int serv_msg_battle_disbanded(server_message_t *psm) {
 	return 0;
 }
 
+void flip_old_items(server_message_t *psm) {
+	static server_message_t sm = {0};
+	if(sm.message == 0) return;
+	pthread_mutex_lock(&cursor_lock);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(sm.user_pos[i].x == 256
+		|| sm.user_pos[i].y == 256)
+			continue;
+
+		set_cursor(sm.user_pos[i].x, sm.user_pos[i].y);
+		printf(" ");
+	}
+
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(sm.item_kind[i] != ITEM_BULLET)
+			continue;
+
+		set_cursor(sm.item_pos[i].x, sm.item_pos[i].y);
+		printf(" ");
+	}
+
+	fflush(stdout);
+
+	pthread_mutex_unlock(&cursor_lock);
+	memcpy(&sm, psm, sizeof(server_message_t));
+}
+
+void draw_users(server_message_t *psm) {
+	pthread_mutex_lock(&cursor_lock);
+	for(int i = 0; i < USER_CNT; i++) {
+		if(psm->user_pos[i].x == 256
+		|| psm->user_pos[i].y == 256)
+			continue;
+
+		set_cursor(psm->user_pos[i].x, psm->user_pos[i].y);
+		if(i == psm->index)
+			printf("Y");
+		else
+			printf("A");
+	}
+
+	fflush(stdout);
+	pthread_mutex_unlock(&cursor_lock);
+}
+
+void draw_items(server_message_t *psm) {
+	pthread_mutex_lock(&cursor_lock);
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(psm->item_kind[i] == ITEM_NONE)
+			continue;
+
+		set_cursor(psm->item_pos[i].x, psm->item_pos[i].y);
+		switch(psm->item_kind[i]) {
+			case ITEM_AMMO:printf("+");break;
+			case ITEM_MAGMA:printf("╳");break;
+			case ITEM_WALL:printf("█");break;
+			case ITEM_BLOOD_VIAL:printf("*");break;
+			case ITEM_BULLET:printf(".");
+		}
+	}
+
+	fflush(stdout);
+
+	pthread_mutex_unlock(&cursor_lock);
+}
+
+void log_psm_info(server_message_t *psm) {
+	int len = 0;
+	char s[1024], *p = s;
+	len += sprintf(p + len, "message: %d, life:%d, user_index:%d\n", psm->message, psm->life, psm->index);
+	len += sprintf(p + len, "user_pos:");
+	for(int i = 0; i < USER_CNT; i++) {
+		len += sprintf(p + len, "(%d,%d), ", psm->user_pos[i].x, psm->user_pos[i].y);
+	}
+
+	len += sprintf(p + len, "\n");
+
+	len += sprintf(p + len, "items:");
+	for(int i = 0; i < MAX_ITEM; i++) {
+		len += sprintf(p + len, "(%d:%d,%d), ", psm->item_kind[i], psm->item_pos[i].x, psm->item_pos[i].y);
+	}
+
+	len += sprintf(p + len, "\n");
+
+	wlog("battle info:\n%s\n", s);
+}
+
 int serv_msg_battle_info(server_message_t *psm) {
+	// FIXME:
 	wlog("call message handler %s\n", __func__);
+	log_psm_info(psm);
+	user_hp = psm->life;
+	flip_old_items(psm);
+	draw_users(psm);
+	draw_items(psm);
+	display_user_state();
 	return 0;
 }
 
 int serv_msg_you_are_dead(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	server_say("you're dead");
-	return -1;
+	return 0;
 }
+
+int serv_msg_you_are_shooted(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("you're shooted");
+	return 0;
+}
+
+int serv_msg_you_are_trapped_in_magma(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("you're trapped in magma");
+	return 0;
+}
+
+int serv_msg_you_got_blood_vial(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("you got blood vial");
+	return 0;
+}
+
 
 static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = serv_response_login_success,
@@ -883,6 +1035,8 @@ static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = serv_response_you_have_logined,
 	[SERVER_RESPONSE_ALL_USERS_INFO] = serv_response_all_users_info,
 	[SERVER_RESPONSE_ALL_FRIENDS_INFO] = serv_response_all_friends_info,
+	[SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE] = serv_response_fail_to_create_battle,
+	[SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS] = serv_response_launch_battle_success,
 	[SERVER_RESPONSE_NOBODY_INVITE_YOU] = serv_response_nobody_invite_you,
 	[SERVER_MESSAGE_FRIEND_LOGIN] = serv_msg_friend_login,
 	[SERVER_MESSAGE_FRIEND_LOGOUT] = serv_msg_friend_logout,
@@ -895,6 +1049,9 @@ static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_MESSAGE_BATTLE_DISBANDED] = serv_msg_battle_disbanded,
 	[SERVER_MESSAGE_BATTLE_INFORMATION] = serv_msg_battle_info,
 	[SERVER_MESSAGE_YOU_ARE_DEAD] = serv_msg_you_are_dead,
+	[SERVER_MESSAGE_YOU_ARE_SHOOTED] = serv_msg_you_are_shooted,
+	[SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA] = serv_msg_you_are_trapped_in_magma,
+	[SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL] = serv_msg_you_got_blood_vial,
 };
 
 static char *server_message_s[] = {
