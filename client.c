@@ -191,14 +191,14 @@ int button_launch_battle() {
 		wlogi("send `launch battle` and invitation to server\n");
 		wrap_send(&cm);
 	}else{
-		wlogi("user reject to invite friend\n");
+		wlogi("user rejects to invite friend\n");
 		wlogi("send `launch battle` message to server\n");
 		send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
 	}
 
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
-		|| global_serv_message == SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE)
+		|| global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_FAIL)
 			break;
 	} while(1);
 	wlog("wait until message=%d\n", global_serv_message);
@@ -215,6 +215,7 @@ int button_invite_user() {
 int button_join_battle() {
 	wlog("call button handler %s\n", __func__);
 	send_command(CLIENT_COMMAND_ACCEPT_BATTLE);
+	user_state = USER_STATE_BATTLE;
 	return 0;
 }
 
@@ -638,11 +639,14 @@ int match_char(char ch) {
 
 void run_battle() {
 	wlog("run battle\n");
+	flip_screen();
 	echo_off();
 	disable_buffer();
 	while(1) {
 		int ch = fgetc(stdin);
 		if(ch == 'q') {
+			user_state = USER_STATE_LOGIN;
+			send_command(CLIENT_COMMAND_QUIT_BATTLE);
 			break;
 		}else if(ch == ':') {
 			// do something
@@ -657,6 +661,7 @@ void run_battle() {
 		}
 	}
 
+	flip_screen();
 	wlog("exit run_battle\n");
 }
 
@@ -815,7 +820,7 @@ int serv_response_all_friends_info(server_message_t *psm) {
 	return 0;
 }
 
-int serv_response_fail_to_create_battle(server_message_t *psm) {
+int serv_response_launch_battle_fail(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	server_say("launch battle failed");
 	return 0;
@@ -842,7 +847,8 @@ int serv_msg_friend_login(server_message_t *psm) {
 			break;
 		}
 	}
-	draw_catalog(&friend_list);
+	if(user_state == USER_STATE_LOGIN)
+		draw_catalog(&friend_list);
 	server_say(sformat("friend %s login\n", psm->friend_name));
 	return 0;
 }
@@ -855,7 +861,8 @@ int serv_msg_friend_logout(server_message_t *psm) {
 			break;
 		}
 	}
-	draw_catalog(&friend_list);
+	if(user_state == USER_STATE_LOGIN)
+		draw_catalog(&friend_list);
 	server_say(sformat("friend %s logout\n", psm->friend_name));
 	return 0;
 }
@@ -905,13 +912,14 @@ int serv_msg_battle_disbanded(server_message_t *psm) {
 
 void flip_old_items(server_message_t *psm) {
 	static server_message_t sm = {0};
-	if(sm.message == 0) return;
+	wlog("call flip old items\n");
 	pthread_mutex_lock(&cursor_lock);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(sm.user_pos[i].x == 256
 		|| sm.user_pos[i].y == 256)
 			continue;
 
+		wlog("clear user %d@(%d, %d)\n", i, sm.user_pos[i].x, sm.user_pos[i].y);
 		set_cursor(sm.user_pos[i].x, sm.user_pos[i].y);
 		printf(" ");
 	}
@@ -993,12 +1001,14 @@ void log_psm_info(server_message_t *psm) {
 int serv_msg_battle_info(server_message_t *psm) {
 	// FIXME:
 	wlog("call message handler %s\n", __func__);
-	log_psm_info(psm);
-	user_hp = psm->life;
-	flip_old_items(psm);
-	draw_users(psm);
-	draw_items(psm);
-	display_user_state();
+	if(user_state == USER_STATE_BATTLE) {
+		log_psm_info(psm);
+		user_hp = psm->life;
+		flip_old_items(psm);
+		draw_users(psm);
+		draw_items(psm);
+		display_user_state();
+	}
 	return 0;
 }
 
@@ -1035,7 +1045,7 @@ static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = serv_response_you_have_logined,
 	[SERVER_RESPONSE_ALL_USERS_INFO] = serv_response_all_users_info,
 	[SERVER_RESPONSE_ALL_FRIENDS_INFO] = serv_response_all_friends_info,
-	[SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE] = serv_response_fail_to_create_battle,
+	[SERVER_RESPONSE_LAUNCH_BATTLE_FAIL] = serv_response_launch_battle_fail,
 	[SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS] = serv_response_launch_battle_success,
 	[SERVER_RESPONSE_NOBODY_INVITE_YOU] = serv_response_nobody_invite_you,
 	[SERVER_MESSAGE_FRIEND_LOGIN] = serv_msg_friend_login,
@@ -1055,17 +1065,22 @@ static int (*recv_msg_func[])(server_message_t *) = {
 };
 
 static char *server_message_s[] = {
+	[SERVER_SAY_NOTHING] = "SERVER_SAY_NOTHING",
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = "SERVER_RESPONSE_LOGIN_SUCCESS",
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = "SERVER_RESPONSE_YOU_HAVE_LOGINED",
 	[SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN] = "SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN",
 	[SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID] = "SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID",
 	[SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS] = "SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS",
 	[SERVER_RESPONSE_ALL_USERS_INFO] = "SERVER_RESPONSE_ALL_USERS_INFO",
-	[SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE] = "SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE",
+	[SERVER_RESPONSE_ALL_FRIENDS_INFO] = "SERVER_RESPONSE_ALL_FRIENDS_INFO",
+	[SERVER_RESPONSE_LAUNCH_BATTLE_FAIL] = "SERVER_RESPONSE_LAUNCH_BATTLE_FAIL",
+	[SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS] = "SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS",
 	[SERVER_RESPONSE_YOURE_NOT_IN_BATTLE] = "SERVER_RESPONSE_YOURE_NOT_IN_BATTLE",
 	[SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE] = "SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE",
 	[SERVER_RESPONSE_NOBODY_INVITE_YOU] = "SERVER_RESPONSE_NOBODY_INVITE_YOU",
 	[SERVER_MESSAGE_DELIM] = "SERVER_MESSAGE_DELIM",
+	[SERVER_MESSAGE_FRIEND_LOGIN] = "SERVER_MESSAGE_FRIEND_LOGIN",
+	[SERVER_MESSAGE_FRIEND_LOGOUT] = "SERVER_MESSAGE_FRIEND_LOGOUT",
 	[SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE] = "SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE",
 	[SERVER_MESSAGE_FRIEND_REJECT_BATTLE] = "SERVER_MESSAGE_FRIEND_REJECT_BATTLE",
 	[SERVER_MESSAGE_FRIEND_NOT_LOGIN] = "SERVER_MESSAGE_FRIEND_NOT_LOGIN",
@@ -1075,6 +1090,9 @@ static char *server_message_s[] = {
 	[SERVER_MESSAGE_BATTLE_DISBANDED] = "SERVER_MESSAGE_BATTLE_DISBANDED",
 	[SERVER_MESSAGE_BATTLE_INFORMATION] = "SERVER_MESSAGE_BATTLE_INFORMATION",
 	[SERVER_MESSAGE_YOU_ARE_DEAD] = "SERVER_MESSAGE_YOU_ARE_DEAD",
+	[SERVER_MESSAGE_YOU_ARE_SHOOTED] = "SERVER_MESSAGE_YOU_ARE_SHOOTED",
+	[SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA] = "SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA",
+	[SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL] = "SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL",
 };
 
 void *message_monitor(void *args) {

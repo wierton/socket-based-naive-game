@@ -546,7 +546,7 @@ int client_command_launch_battle(int uid) {
 
 	if(bid == -1) {
 		loge("fail to create battle for %s and %s\n", sessions[uid].user_name, pcm->user_name);
-		send_to_client(conn, SERVER_RESPONSE_FAIL_TO_CREATE_BATTLE);
+		send_to_client(conn, SERVER_RESPONSE_LAUNCH_BATTLE_FAIL);
 		return 0;
 	}else if(friend_id == uid){
 		logi("launch battle %d for %s\n", bid, sessions[uid].user_name);
@@ -683,7 +683,7 @@ int client_command_move_right(int uid) {
 	log("user %s move right\n", sessions[uid].user_name);
 	int bid = sessions[uid].bid;
 	battles[bid].users[uid].dir = DIR_RIGHT;
-	if(battles[bid].users[uid].pos.x < BATTLE_H - 1) {
+	if(battles[bid].users[uid].pos.x < BATTLE_W - 1) {
 		battles[bid].users[uid].pos.x ++;
 	}
 	return 0;
