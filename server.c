@@ -72,20 +72,20 @@ void user_quit_battle(uint32_t bid, uint32_t uid) {
 
 	log("user %s quit from battle %d(%lu users)\n", sessions[uid].user_name, bid, battles[bid].nr_users);
 	battles[bid].nr_users --;
-	battles[bid].users[uid].battle_state = BATTLE_STATE_LIVE;
+	battles[bid].users[uid].battle_state = BATTLE_STATE_UNJOINED;
 	sessions[uid].state = USER_STATE_LOGIN;
 
 	if(battles[bid].nr_users == 0) {
 		// disband battle
+		log("disband battle %d\n", bid);
 		battles[bid].is_alloced = false;
 	}else{
-		// FIXME: send messages to buddies that someone quit battle
+		server_message_t sm;
+		sm.message = SERVER_MESSAGE_USER_QUIT_BATTLE;
+		strncpy(sm.friend_name, sessions[uid].user_name, USERNAME_SIZE - 1);
+
 		for(int i = 0; i < USER_CNT; i++) {
-			if(battles[bid].users[i].battle_state) {
-				server_message_t sm;
-				memset(&sm, 0, sizeof(server_message_t));
-				sm.message = SERVER_MESSAGE_USER_QUIT_BATTLE;
-				strncpy(sm.friend_name, sessions[uid].user_name, USERNAME_SIZE - 1);
+			if(battles[bid].users[i].battle_state != BATTLE_STATE_UNJOINED) {
 
 				wrap_send(sessions[i].conn, &sm);
 			}
@@ -117,11 +117,10 @@ void user_join_battle(uint32_t bid, uint32_t uid) {
 }
 
 void user_invited_to_join_battle(uint32_t bid, uint32_t uid) {
-	if(sessions[uid].state == USER_STATE_WAIT_TO_BATTLE) {
-		if(bid != sessions[uid].bid) {
-			// reject old battle
-			send_to_client(sessions[uid].inviter_id, SERVER_MESSAGE_FRIEND_REJECT_BATTLE);
-		}
+	if(sessions[uid].state == USER_STATE_WAIT_TO_BATTLE
+	&& bid != sessions[uid].bid) {
+		log("user %d@%s rejects old battle #%d\n", uid, sessions[uid].user_name, sessions[uid].bid);
+		send_to_client(sessions[uid].inviter_id, SERVER_MESSAGE_FRIEND_REJECT_BATTLE);
 	}
 
 	user_join_battle_common_part(bid, uid, USER_STATE_WAIT_TO_BATTLE);
@@ -567,9 +566,12 @@ int client_command_launch_battle(int uid) {
 }
 
 int client_command_quit_battle(int uid) {
+	log("user %d@%s tries to quit battle\n", uid, sessions[uid].user_name);
 	if(sessions[uid].state != USER_STATE_BATTLE) {
+		logi("but he hasn't join battle\n");
 		send_to_client(sessions[uid].conn, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
 	}else{
+		logi("call user_quit_battle to quit\n");
 		user_quit_battle(sessions[uid].bid, uid);
 	}
 	return 0;
@@ -579,6 +581,7 @@ int client_command_invite_user(int uid) {
 	client_message_t *pcm = &sessions[uid].cm;
 	int bid = sessions[uid].bid;
 	int friend_id = find_uid_by_user_name(pcm->user_name);
+	log("user %d@%s tries to invite friend\n", uid, sessions[uid].user_name);
 
 	if(sessions[uid].state != USER_STATE_BATTLE) {
 		log("user %s who invites friend %s wasn't in battle\n", sessions[uid].user_name, pcm->user_name);

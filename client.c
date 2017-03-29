@@ -859,6 +859,7 @@ int serv_response_launch_battle_success(server_message_t *psm) {
 int serv_response_nobody_invite_you(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	server_say("no body invite you");
+	user_state = USER_STATE_LOGIN;
 	return 0;
 }
 
