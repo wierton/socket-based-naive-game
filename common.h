@@ -126,7 +126,18 @@
 #define USERNAME_SIZE  7
 #define USER_CNT   5
 
-#define MAX_ITEM 30
+#define INIT_BULLETS 12
+#define MAX_BULLETS 24
+#define BULLETS_PER_MAGAZINE 5
+
+#define INIT_LIFE 5
+#define MAX_LIFE 20
+#define LIFE_PER_VIAL 3
+
+#define MAGMA_INIT_TIMES 8
+#define MAX_OTHER 15
+
+#define MAX_ITEM (USER_CNT * (MAX_BULLETS) + MAX_OTHER)
 
 #define PORT 40000
 
@@ -180,11 +191,13 @@ enum {
 	SERVER_MESSAGE_YOU_ARE_SHOOTED,
 	SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA,
 	SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL,
+	SERVER_MESSAGE_YOU_GOT_MAGAZINE,
+	SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY,
 };
 
 enum {
 	ITEM_NONE,
-	ITEM_AMMO,
+	ITEM_MAGAZINE,
 	ITEM_MAGMA,
 	ITEM_WALL,
 	ITEM_BLOOD_VIAL,
@@ -246,7 +259,7 @@ typedef struct server_message_t {
 		} all_users[USER_CNT];
 
 		struct {
-			uint8_t life, index;
+			uint8_t life, index, bullets_num;
 			pos_t user_pos[USER_CNT];
 			uint8_t item_kind[MAX_ITEM];
 			pos_t item_pos[MAX_ITEM];

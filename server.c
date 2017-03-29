@@ -37,11 +37,14 @@ struct battle_t {
 	size_t nr_users;
 	struct {
 		int battle_state;
+		int nr_bullets;
 		int dir;
 		int life;
 		pos_t pos;
 		pos_t last_pos;
 	} users[USER_CNT];
+
+	int num_of_other; // number of other alloced item except for bullet
 
 	struct {
 		int is_used;
@@ -98,7 +101,8 @@ void user_join_battle_common_part(uint32_t bid, uint32_t uid, uint32_t joined_st
 
 	log("user %s join in battle %d(%lu users)\n", sessions[uid].user_name, bid, battles[bid].nr_users);
 	battles[bid].nr_users ++;
-	battles[bid].users[uid].life = 10;
+	battles[bid].users[uid].life = INIT_LIFE;
+	battles[bid].users[uid].nr_bullets = INIT_BULLETS;
 	battles[bid].users[uid].battle_state = BATTLE_STATE_LIVE;
 
 	sessions[uid].state = joined_state;
@@ -222,6 +226,8 @@ int get_unused_item(int bid) {
 void random_generate_items(int bid) {
 	if(rand() % 200 != 9) return;
 
+	if(battles[bid].num_of_other >= MAX_OTHER) return;
+
 	int item_id = get_unused_item(bid);
 	if(item_id == -1) return;
 
@@ -235,7 +241,7 @@ void random_generate_items(int bid) {
 			battles[bid].items[item_id].pos.x,
 			battles[bid].items[item_id].pos.y);
 	if(random_kind == ITEM_MAGMA) {
-		battles[bid].items[item_id].times = 8;
+		battles[bid].items[item_id].times = MAGMA_INIT_TIMES;
 	}
 }
 
@@ -256,7 +262,7 @@ void move_bullets(int bid) {
 			case DIR_RIGHT:	(*px)++;break;
 		}
 
-		if(*px >= BATTLE_W - 1 || *py >= BATTLE_H - 1) {
+		if(*px >= BATTLE_W || *py >= BATTLE_H) {
 			log("free bullet #%d\n", i);
 			battles[bid].items[i].is_used = false;
 		}
@@ -280,9 +286,15 @@ void check_who_get_blood_vial(int bid) {
 
 			if(ix == ux && iy == uy) {
 				int conn = sessions[j].conn;
-				battles[bid].users[j].life += 5;
+				battles[bid].users[j].life += LIFE_PER_VIAL;
 				log("user %d@%s got blood vial\n", j, sessions[j].user_name);
+				if(battles[bid].users[j].life > MAX_LIFE) {
+					log("user %d@%s life exceeds max value\n", j, sessions[j].user_name);
+					battles[bid].users[j].life = MAX_LIFE;
+				}
+
 				battles[bid].items[i].is_used = false;
+				battles[bid].num_of_other --;
 				send_to_client(conn, SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL);
 				break;
 			}
@@ -314,7 +326,40 @@ void check_who_traped_in_magma(int bid) {
 				if(battles[bid].items[i].times <= 0) {
 					log("magma %d is exhausted\n", i);
 					battles[bid].items[i].is_used = false;
+					battles[bid].num_of_other --;
 				}
+				break;
+			}
+		}
+	}
+}
+
+void check_who_got_charger(int bid) {
+	for(int i = 0; i < MAX_ITEM; i++) {
+		if(battles[bid].items[i].is_used == false
+		|| battles[bid].items[i].kind != ITEM_MAGAZINE)
+			continue;
+
+		int ix = battles[bid].items[i].pos.x;
+		int iy = battles[bid].items[i].pos.y;
+
+		for(int j = 0; j < USER_CNT; j++) {
+			if(battles[bid].users[j].battle_state != BATTLE_STATE_LIVE)
+				continue;
+			int ux = battles[bid].users[j].pos.x;
+			int uy = battles[bid].users[j].pos.y;
+
+			if(ix == ux && iy == uy) {
+				int conn = sessions[j].conn;
+				battles[bid].users[j].nr_bullets += BULLETS_PER_MAGAZINE;
+				log("user %d@%s is got magazine\n", j, sessions[j].user_name);
+				if(battles[bid].users[j].nr_bullets > MAX_BULLETS) {
+					log("user %d@%s's bullets exceeds max value\n", j, sessions[j].user_name);
+					battles[bid].users[j].nr_bullets = MAX_BULLETS;
+				}
+
+				send_to_client(conn, SERVER_MESSAGE_YOU_GOT_MAGAZINE);
+				battles[bid].items[i].is_used = false;
 				break;
 			}
 		}
@@ -390,6 +435,7 @@ void inform_all_user_battle_state(int bid) {
 	for(int i = 0; i < USER_CNT; i++) {
 		sm.index = i;
 		sm.life = battles[bid].users[i].life;
+		sm.bullets_num = battles[bid].users[i].nr_bullets;
 		if(battles[bid].users[i].battle_state != BATTLE_STATE_UNJOINED) {
 			wrap_send(sessions[i].conn, &sm);
 		}
@@ -404,6 +450,7 @@ void *battle_ruler(void *args) {
 		move_bullets(bid);
 		check_who_get_blood_vial(bid);
 		check_who_traped_in_magma(bid);
+		check_who_got_charger(bid);
 		check_who_is_shooted(bid);
 		check_who_is_dead(bid);
 		
@@ -452,6 +499,7 @@ int client_command_user_login(int uid) {
 
 	// no duplicate user ids found
 	if(is_dup) {
+		log("send fail dup id message to client.\n");
 		send_to_client(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
 		sessions[uid].state = USER_STATE_NOT_LOGIN;
 	}else{
@@ -731,6 +779,11 @@ int client_command_fire(int uid) {
 	log("alloc item %d for bullet\n", item_id);
 	if(item_id == -1) return 0;
 
+	if(battles[bid].users[uid].nr_bullets <= 0) {
+		send_to_client(sessions[uid].conn, SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY);
+		return 0;
+	}
+
 	int dir = battles[bid].users[uid].dir;
 	int x = battles[bid].users[uid].pos.x;
 	int y = battles[bid].users[uid].pos.y;
@@ -741,6 +794,9 @@ int client_command_fire(int uid) {
 	battles[bid].items[item_id].owner = uid;
 	battles[bid].items[item_id].pos.x = x;
 	battles[bid].items[item_id].pos.y = y;
+
+	battles[bid].users[uid].nr_bullets --;
+
 	return 0;
 }
 

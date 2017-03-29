@@ -9,13 +9,14 @@
 
 #define LINE_MAX_LEN 20
 
-#define wlog(fmt, ...) write_log("%d: " fmt, __LINE__, ## __VA_ARGS__)
-#define wlogi(fmt, ...) write_log("%d: ==> " fmt, __LINE__, ## __VA_ARGS__)
+#define wlog(fmt, ...) write_log("%s:%d: " fmt, user_name, __LINE__, ## __VA_ARGS__)
+#define wlogi(fmt, ...) write_log("%s:%d: ==> " fmt, user_name, __LINE__, ## __VA_ARGS__)
 
 static int scr_actual_w = 0;
 static int scr_actual_h = 0;
 
 static int user_hp = 0;
+static int user_bullets = 0;
 static int user_state = USER_STATE_NOT_LOGIN;
 static char *user_name = "<unknown>";
 static char *user_state_s[] = {
@@ -161,7 +162,8 @@ int button_login() {
 	} while(1);
 	wlog("wait until message=%d\n", global_serv_message);
 
-	send_command(CLIENT_COMMAND_FETCH_ALL_FRIENDS);
+	if(global_serv_message == SERVER_RESPONSE_LOGIN_SUCCESS)
+		send_command(CLIENT_COMMAND_FETCH_ALL_FRIENDS);
 
 	wlogi("set user name to '%s'\n", name);
 	user_name = name;
@@ -423,7 +425,7 @@ void write_log(const char *format, ...) {
 
 void display_user_state() {
 	assert(user_state <= sizeof(user_state_s) / sizeof(user_state_s[0]));
-	bottom_bar_output(-1, "name: %s  HP: %d  state: %s", user_name, user_hp, user_state_s[user_state]);
+	bottom_bar_output(-1, "name: %s  HP: %d  bullets: %d  state: %s", user_name, user_hp, user_bullets, user_state_s[user_state]);
 }
 
 void server_say(const char *message) {
@@ -466,7 +468,7 @@ void resume_and_exit(int status) {
 	set_cursor(1, SCR_H + 1);
 	show_cursor();
 	close(client_fd);
-	wlog("========================EXIT=======================\n\n\n");
+	wlog("====================EXIT====================\n\n\n");
 	exit(status);
 }
 
@@ -994,7 +996,7 @@ void draw_items(server_message_t *psm) {
 
 		set_cursor(psm->item_pos[i].x, psm->item_pos[i].y);
 		switch(psm->item_kind[i]) {
-			case ITEM_AMMO:printf("+");break;
+			case ITEM_MAGAZINE:printf("+");break;
 			case ITEM_MAGMA:printf("╳");break;
 			case ITEM_WALL:printf("█");break;
 			case ITEM_BLOOD_VIAL:printf("*");break;
@@ -1009,7 +1011,8 @@ void draw_items(server_message_t *psm) {
 
 void log_psm_info(server_message_t *psm) {
 	int len = 0;
-	char s[1024], *p = s;
+	static char s[1024 * 1024];
+	char *p = s;
 	len += sprintf(p + len, "message: %d, life:%d, user_index:%d\n", psm->message, psm->life, psm->index);
 	len += sprintf(p + len, "user_pos:");
 	for(int i = 0; i < USER_CNT; i++) {
@@ -1032,11 +1035,19 @@ int serv_msg_battle_info(server_message_t *psm) {
 	// FIXME:
 	wlog("call message handler %s\n", __func__);
 	if(user_state == USER_STATE_BATTLE) {
+		wlog("log_psm_info\n");
 		log_psm_info(psm);
+		wlog("assign value to user_bullets\n");
+		user_bullets = psm->bullets_num;
+		wlog("assign value to user_hp\n");
 		user_hp = psm->life;
+		wlog("flip_old_items\n");
 		flip_old_items(psm);
+		wlog("draw_users\n");
 		draw_users(psm);
+		wlog("draw_items\n");
 		draw_items(psm);
+		wlog("display_user_state\n");
 		display_user_state();
 	}
 	return 0;
@@ -1066,6 +1077,17 @@ int serv_msg_you_got_blood_vial(server_message_t *psm) {
 	return 0;
 }
 
+int server_message_you_got_magazine(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("you got charger");
+	return 0;
+}
+
+int server_message_your_magazine_is_empty(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("your charger is empty");
+	return 0;
+}
 
 static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = serv_response_login_success,
@@ -1093,6 +1115,8 @@ static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_MESSAGE_YOU_ARE_SHOOTED] = serv_msg_you_are_shooted,
 	[SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA] = serv_msg_you_are_trapped_in_magma,
 	[SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL] = serv_msg_you_got_blood_vial,
+	[SERVER_MESSAGE_YOU_GOT_MAGAZINE] = server_message_you_got_magazine,
+	[SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY] = server_message_your_magazine_is_empty,
 };
 
 static char *server_message_s[] = {
@@ -1120,6 +1144,7 @@ static char *server_message_s[] = {
 	[SERVER_MESSAGE_USER_QUIT_BATTLE] = "SERVER_MESSAGE_USER_QUIT_BATTLE",
 	[SERVER_MESSAGE_BATTLE_DISBANDED] = "SERVER_MESSAGE_BATTLE_DISBANDED",
 	[SERVER_MESSAGE_BATTLE_INFORMATION] = "SERVER_MESSAGE_BATTLE_INFORMATION",
+	[SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY] = "SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY",
 	[SERVER_MESSAGE_YOU_ARE_DEAD] = "SERVER_MESSAGE_YOU_ARE_DEAD",
 	[SERVER_MESSAGE_YOU_ARE_SHOOTED] = "SERVER_MESSAGE_YOU_ARE_SHOOTED",
 	[SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA] = "SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA",
@@ -1135,6 +1160,7 @@ void *message_monitor(void *args) {
 		if(recv_msg_func[sm.message]) {
 			wlog("==> call message handler\n");
 			recv_msg_func[sm.message](&sm);
+			wlog("==> quit message handler\n");
 		}
 
 		// delay assignment
@@ -1152,7 +1178,7 @@ void start_message_monitor() {
 
 
 int main() {
-	wlog("=========================START======================\n");
+	wlog("====================START====================\n");
 	client_fd = connect_to_server();
 
 	system("clear");
