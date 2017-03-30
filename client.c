@@ -657,13 +657,15 @@ void run_battle() {
 	flip_screen();
 	echo_off();
 	disable_buffer();
-	while(1) {
+	while(user_state == USER_STATE_BATTLE) {
 		int ch = fgetc(stdin);
 		if(ch == 'q') {
+			wlog("type q and quit battle\n");
 			user_state = USER_STATE_LOGIN;
 			send_command(CLIENT_COMMAND_QUIT_BATTLE);
 			break;
 		}else if(ch == '\t') {
+			wlog("type <TAB> and enter command mode\n");
 			read_and_execute_command();
 		}
 

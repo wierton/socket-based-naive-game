@@ -20,7 +20,7 @@ int usleep(int usec);
 void wrap_recv(int conn, client_message_t *pcm);
 void wrap_send(int conn, server_message_t *psm);
 
-void send_to_client(int conn, int reason);
+void send_to_client(int uid, int reason);
 void close_session(int conn, int reason);
 
 struct session_t {
@@ -285,7 +285,6 @@ void check_who_get_blood_vial(int bid) {
 			int uy = battles[bid].users[j].pos.y;
 
 			if(ix == ux && iy == uy) {
-				int conn = sessions[j].conn;
 				battles[bid].users[j].life += LIFE_PER_VIAL;
 				log("user %d@%s got blood vial\n", j, sessions[j].user_name);
 				if(battles[bid].users[j].life > MAX_LIFE) {
@@ -295,7 +294,7 @@ void check_who_get_blood_vial(int bid) {
 
 				battles[bid].items[i].is_used = false;
 				battles[bid].num_of_other --;
-				send_to_client(conn, SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL);
+				send_to_client(j, SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL);
 				break;
 			}
 		}
@@ -318,11 +317,10 @@ void check_who_traped_in_magma(int bid) {
 			int uy = battles[bid].users[j].pos.y;
 
 			if(ix == ux && iy == uy) {
-				int conn = sessions[j].conn;
 				battles[bid].users[j].life --;
 				battles[bid].items[i].times --;
 				log("user %d@%s is trapped in magma\n", j, sessions[j].user_name);
-				send_to_client(conn, SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA);
+				send_to_client(j, SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA);
 				if(battles[bid].items[i].times <= 0) {
 					log("magma %d is exhausted\n", i);
 					battles[bid].items[i].is_used = false;
@@ -350,7 +348,6 @@ void check_who_got_charger(int bid) {
 			int uy = battles[bid].users[j].pos.y;
 
 			if(ix == ux && iy == uy) {
-				int conn = sessions[j].conn;
 				battles[bid].users[j].nr_bullets += BULLETS_PER_MAGAZINE;
 				log("user %d@%s is got magazine\n", j, sessions[j].user_name);
 				if(battles[bid].users[j].nr_bullets > MAX_BULLETS) {
@@ -358,7 +355,7 @@ void check_who_got_charger(int bid) {
 					battles[bid].users[j].nr_bullets = MAX_BULLETS;
 				}
 
-				send_to_client(conn, SERVER_MESSAGE_YOU_GOT_MAGAZINE);
+				send_to_client(j, SERVER_MESSAGE_YOU_GOT_MAGAZINE);
 				battles[bid].items[i].is_used = false;
 				break;
 			}
@@ -383,10 +380,9 @@ void check_who_is_shooted(int bid) {
 
 			if(ix == ux && iy == uy
 			&& battles[bid].items[i].owner != j) {
-				int conn = sessions[j].conn;
 				battles[bid].users[j].life --;
 				log("user %d@%s is shooted\n", j, sessions[j].user_name);
-				send_to_client(conn, SERVER_MESSAGE_YOU_ARE_SHOOTED);
+				send_to_client(j, SERVER_MESSAGE_YOU_ARE_SHOOTED);
 				battles[bid].items[i].is_used = false;
 				break;
 			}
@@ -398,11 +394,10 @@ void check_who_is_dead(int bid) {
 	for(int i = 0; i < USER_CNT; i++) {
 		if(battles[bid].users[i].battle_state == BATTLE_STATE_LIVE
 		&& battles[bid].users[i].life <= 0) {
-			int conn = sessions[i].conn;
 			log("user %d@%s is dead\n", i, sessions[i].user_name);
 			battles[bid].users[i].battle_state = BATTLE_STATE_DEAD;
 			log("send dead info to user %d@%s\n", i, sessions[i].user_name);
-			send_to_client(conn, SERVER_MESSAGE_YOU_ARE_DEAD);
+			send_to_client(i, SERVER_MESSAGE_YOU_ARE_DEAD);
 		}else if(battles[bid].users[i].battle_state == BATTLE_STATE_DEAD){
 			battles[bid].users[i].battle_state = BATTLE_STATE_WITNESS;
 		}
@@ -474,13 +469,12 @@ void launch_battle(int bid) {
 
 int client_command_user_login(int uid) {
 	int is_dup = 0;
-	int conn = sessions[uid].conn;
 	client_message_t *pcm = &sessions[uid].cm;
 	char *user_name = pcm->user_name;
 
 	if(query_session_built(uid)) {
 		log("user '%s' has logined\n", sessions[uid].user_name);
-		send_to_client(conn, SERVER_RESPONSE_YOU_HAVE_LOGINED);
+		send_to_client(uid, SERVER_RESPONSE_YOU_HAVE_LOGINED);
 		return 0;
 	}
 
@@ -500,12 +494,12 @@ int client_command_user_login(int uid) {
 	// no duplicate user ids found
 	if(is_dup) {
 		log("send fail dup id message to client.\n");
-		send_to_client(conn, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
+		send_to_client(uid, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
 		sessions[uid].state = USER_STATE_NOT_LOGIN;
 	}else{
 		log("user '%s' login success\n", user_name);
 		sessions[uid].state = USER_STATE_LOGIN;
-		send_to_client(conn, SERVER_RESPONSE_LOGIN_SUCCESS);
+		send_to_client(uid, SERVER_RESPONSE_LOGIN_SUCCESS);
 		strncpy(sessions[uid].user_name, user_name, USERNAME_SIZE - 1);
 		inform_friends(uid, SERVER_MESSAGE_FRIEND_LOGIN);
 	}
@@ -538,13 +532,12 @@ void list_all_users(server_message_t *psm) {
 }
 
 int client_command_fetch_all_users(int uid) {
-	int conn = sessions[uid].conn;
 	char *user_name = sessions[uid].user_name;
 	log("user %d@'%s' tries to fetch all users' info\n", uid, user_name);
 
 	if(!query_session_built(uid)) {
 		logi("user %d@'%s' who tries to list users hasn't login\n", uid, user_name);
-		send_to_client(conn, SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN);
+		send_to_client(uid, SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN);
 		return 0;
 	}
 
@@ -553,19 +546,18 @@ int client_command_fetch_all_users(int uid) {
 	list_all_users(&sm);
 	sm.response = SERVER_RESPONSE_ALL_USERS_INFO;
 
-	wrap_send(conn, &sm);
+	wrap_send(sessions[uid].conn, &sm);
 
 	return 0;
 }
 
 int client_command_fetch_all_friends(int uid) {
-	int conn = sessions[uid].conn;
 	char *user_name = sessions[uid].user_name;
 	log("user %d@'%s' tries to fetch all friends' info\n", uid, user_name);
 
 	if(!query_session_built(uid)) {
 		logi("user %d@'%s' who tries to list users hasn't login\n", uid, user_name);
-		send_to_client(conn, SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN);
+		send_to_client(uid, SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN);
 		return 0;
 	}
 
@@ -575,27 +567,26 @@ int client_command_fetch_all_friends(int uid) {
 	sm.all_users[uid].user_state = USER_STATE_UNUSED;
 	sm.response = SERVER_RESPONSE_ALL_FRIENDS_INFO;
 
-	wrap_send(conn, &sm);
+	wrap_send(sessions[uid].conn, &sm);
 
 	return 0;
 }
 
 
 int invite_friend_to_battle(int bid, int uid, char *friend_name) {
-	int conn = sessions[uid].conn;
 	int friend_id = find_uid_by_user_name(friend_name);
 	if(friend_id == -1) {
 		// fail to find friend
 		logi("friend '%s' hasn't login\n", friend_name);
-		send_to_client(conn, SERVER_MESSAGE_FRIEND_NOT_LOGIN);
+		send_to_client(uid, SERVER_MESSAGE_FRIEND_NOT_LOGIN);
 	}else if(friend_id == uid){
 		logi("launch battle %d for %s\n", bid, sessions[uid].user_name);
 		sessions[uid].inviter_id = uid;
-		send_to_client(conn, SERVER_RESPONSE_INVITATION_SENT);
+		send_to_client(uid, SERVER_RESPONSE_INVITATION_SENT);
 	}else if(sessions[friend_id].state == USER_STATE_BATTLE) {
 		// friend already in battle
 		logi("friend '%s' already in battle\n", friend_name);
-		send_to_client(conn, SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE);
+		send_to_client(uid, SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE);
 	}else{
 		// invite friend
 		logi("friend %d@'%s' found\n", friend_id, friend_name);
@@ -615,11 +606,9 @@ int invite_friend_to_battle(int bid, int uid, char *friend_name) {
 }
 
 int client_command_launch_battle(int uid) {
-	int conn = sessions[uid].conn;
-
 	if(sessions[uid].state == USER_STATE_BATTLE) {
 		log("user '%s' who tries to launch battle has been in battle\n", sessions[uid].user_name);
-		send_to_client(conn, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
+		send_to_client(uid, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
 		return 0;
 	}else{
 		log("user '%s' tries to launch battle\n", sessions[uid].user_name);
@@ -632,14 +621,14 @@ int client_command_launch_battle(int uid) {
 
 	if(bid == -1) {
 		loge("fail to create battle for %s and %s\n", sessions[uid].user_name, pcm->user_name);
-		send_to_client(conn, SERVER_RESPONSE_LAUNCH_BATTLE_FAIL);
+		send_to_client(uid, SERVER_RESPONSE_LAUNCH_BATTLE_FAIL);
 		return 0;
 	}else{
 		logi("launch battle %d for %s, invite %s\n", bid, sessions[uid].user_name, pcm->user_name);
 		user_join_battle(bid, uid);
 		invite_friend_to_battle(bid, uid, pcm->user_name);
 		launch_battle(bid);
-		send_to_client(conn, SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS);
+		send_to_client(uid, SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS);
 	}
 
 	return 0;
@@ -649,7 +638,7 @@ int client_command_quit_battle(int uid) {
 	log("user %d@%s tries to quit battle\n", uid, sessions[uid].user_name);
 	if(sessions[uid].state != USER_STATE_BATTLE) {
 		logi("but he hasn't join battle\n");
-		send_to_client(sessions[uid].conn, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
+		send_to_client(uid, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
 	}else{
 		logi("call user_quit_battle to quit\n");
 		user_quit_battle(sessions[uid].bid, uid);
@@ -665,7 +654,7 @@ int client_command_invite_user(int uid) {
 
 	if(sessions[uid].state != USER_STATE_BATTLE) {
 		log("user %s who invites friend %s wasn't in battle\n", sessions[uid].user_name, pcm->user_name);
-		send_to_client(sessions[uid].conn, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
+		send_to_client(uid, SERVER_RESPONSE_YOURE_NOT_IN_BATTLE);
 	}else{
 		logi("invite user %s to battle #%d\n", sessions[friend_id].user_name, bid);
 		invite_friend_to_battle(bid, uid, pcm->user_name);
@@ -689,7 +678,7 @@ int client_command_accept_battle(int uid) {
 
 		int bid = sessions[uid].bid;
 		if(battles[bid].is_alloced) {
-			wrap_send(inviter_id, &sm);
+			wrap_send(sessions[inviter_id].conn, &sm);
 			user_join_battle(bid, uid);
 			logi("accept success\n");
 		}else{
@@ -780,7 +769,7 @@ int client_command_fire(int uid) {
 	if(item_id == -1) return 0;
 
 	if(battles[bid].users[uid].nr_bullets <= 0) {
-		send_to_client(sessions[uid].conn, SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY);
+		send_to_client(uid, SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY);
 		return 0;
 	}
 
@@ -842,7 +831,8 @@ void wrap_send(int conn, server_message_t *psm) {
 	}
 }
 
-void send_to_client(int conn, int reason) {
+void send_to_client(int uid, int reason) {
+	int conn = sessions[uid].conn;
 	server_message_t sm;
 	memset(&sm, 0, sizeof(server_message_t));
 	sm.response = reason;
