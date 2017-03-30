@@ -22,6 +22,10 @@
   4. operations in battle
     * w s a d can move around
 	* space can fire
+  5. quit the battle
+    * note that even you die, you won't be quited from the battle
+	but your role will be changed from player into witness. If you
+	want to return the last ui, you need to type `q`.
 
 * screenshots
 
