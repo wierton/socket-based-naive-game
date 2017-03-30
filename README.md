@@ -15,7 +15,7 @@
 	|-------------|-----------|
 	|      Y      |    you    |
 	|      A      |   others  |
-	|      █      |  shelter  |
+	|      █      |   grass   |
 	|      ╳      |   magma   |
 	|      +      |  magazine |
 	|      *      | blood vial|

@@ -1017,7 +1017,7 @@ void draw_items(server_message_t *psm) {
 		switch(psm->item_kind[i]) {
 			case ITEM_MAGAZINE:printf("+");break;
 			case ITEM_MAGMA:printf("╳");break;
-			case ITEM_WALL:printf("█");break;
+			case ITEM_GRASS:printf("█");break;
 			case ITEM_BLOOD_VIAL:printf("*");break;
 			case ITEM_BULLET:printf(".");
 		}
