@@ -270,22 +270,22 @@ struct button_t {
 	int (*button_func)();
 } buttons[] = {
 	[buttonLogin]        = {
-		{24, 5}, "login", button_login,
+		{24, 4}, "login", button_login,
 	},
 	[buttonQuitGame]     = {
-		{24, 13},  " quit", button_quit_game,
+		{24, 12},  " quit", button_quit_game,
 	},
 	[buttonLaunchBattle] = {
-		{7, 3},  "launch battle", button_launch_battle,
+		{7, 2},  "launch battle", button_launch_battle,
 	},
 	[buttonInviteUser] = {
-		{7, 7},  " invite user ", button_invite_user,
+		{7, 6},  " invite user ", button_invite_user,
 	},
 	[buttonJoinBattle] = {
-		{7, 11}, " join battle ", button_join_battle,
+		{7, 10}, " join battle ", button_join_battle,
 	},
 	[buttonLogout] = {
-		{7, 15}, "    logout   ", button_logout,
+		{7, 14}, "    logout   ", button_logout,
 	},
 
 	// [buttonQuitBattle]   = {{7, 11},   "quit battle"},
@@ -343,7 +343,7 @@ void echo_on() {
 }
 
 void set_cursor(uint32_t x, uint32_t y) {
-	printf("\033[%d;%df", y, x);
+	printf("\033[%d;%df", y + 1, x + 1);
 }
 
 void hide_cursor() {
@@ -436,10 +436,10 @@ char *sformat(const char *format, ...) {
 void bottom_bar_output(int line, const char *format, ...) {
 	assert(line <= 0);
 	lock_cursor();
-	set_cursor(1, SCR_H - 1 + line);
+	set_cursor(0, SCR_H - 1 + line);
 	for(int i = 0; i < scr_actual_w; i++)
 		printf(" ");
-	set_cursor(1, SCR_H - 1 + line);
+	set_cursor(0, SCR_H - 1 + line);
 
 	va_list ap;
 	va_start(ap, format);
@@ -508,7 +508,7 @@ int accept_yesno(const char *prompt) {
 void resume_and_exit(int status) {
 	send_command(CLIENT_COMMAND_USER_QUIT);
 	wrap_set_term_attr(&raw_termio);
-	set_cursor(1, SCR_H + 1);
+	set_cursor(0, SCR_H);
 	show_cursor();
 	close(client_fd);
 	wlog("====================EXIT====================\n\n\n");
@@ -586,7 +586,7 @@ void read_and_execute_command() {
 
 void flip_screen() {
 	lock_cursor();
-	set_cursor(0, SCR_H + 1);
+	set_cursor(0, SCR_H);
 	printf("\033[2J");
 	unlock_cursor();
 }
