@@ -139,11 +139,11 @@
 
 #define MAX_ITEM (USER_CNT * (MAX_BULLETS) + MAX_OTHER)
 
-<<<<<<< HEAD
-#define PORT 40001
-=======
+//<<<<<<< HEAD
+//#define PORT 40001
+//=======
 #define PORT 50000
->>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
+//>>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 
 enum {
 	CLIENT_COMMAND_USER_QUIT,

@@ -213,11 +213,7 @@ int button_launch_battle() {
 	wlog("call button handler %s\n", __func__);
 	wlogi("send `launch battle` message to server\n");
 	send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
-<<<<<<< HEAD
 	/* wait for server reply */
-=======
-
->>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 	global_serv_message=-1;
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
@@ -230,28 +226,17 @@ int button_launch_battle() {
 
 int button_invite_user() {
 	wlog("call button handler %s\n", __func__);
-<<<<<<< HEAD
-	char *name=accept_input("Please input your friend name: ");
-	wlog("friend name '%s'\n",name);
 	/* send invitation */
-=======
-	bottom_bar_output(0, "please type invite [user] when you are in battle");
 	wlogi("ask friend's name\n");
 	char *name = accept_input("invite who to your battle: ");
 	wlogi("friend name '%s'\n", name);
-
->>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 	client_message_t cm;
 	memset(&cm, 0, sizeof(client_message_t));
 	cm.command = CLIENT_COMMAND_LAUNCH_BATTLE;
 	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
 	wlogi("send `launch battle` and invitation to server\n");
 	wrap_send(&cm);
-<<<<<<< HEAD
 	/* wait for server reply */
-=======
-
->>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 	global_serv_message=-1;
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
@@ -297,11 +282,7 @@ struct button_t {
 		{7, 6},  " invite user ", button_invite_user,
 	},
 	[buttonJoinBattle] = {
-<<<<<<< HEAD
-		{7, 11}, "accept battle", button_join_battle,
-=======
-		{7, 10}, " join battle ", button_join_battle,
->>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
+		{7, 10}, "accept battle", button_join_battle,
 	},
 	[buttonLogout] = {
 		{7, 14}, "    logout   ", button_logout,
