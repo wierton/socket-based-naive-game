@@ -663,6 +663,7 @@ void run_battle() {
 			wlog("type q and quit battle\n");
 			user_state = USER_STATE_LOGIN;
 			send_command(CLIENT_COMMAND_QUIT_BATTLE);
+			send_command(CLIENT_COMMAND_FETCH_ALL_FRIENDS);
 			break;
 		}else if(ch == '\t') {
 			wlog("type <TAB> and enter command mode\n");
