@@ -1,6 +1,8 @@
-UI bug after pressing the "launch battle" button with a friend invited.-fixed
-UI bug after pressing the "launch battle" button without invition.-fixed
-UI bug after quiting a battle and launching a new battle.
+Fixed: UI bug after pressing the "launch battle" button with a friend invited.
+Fixed: UI bug after pressing the "launch battle" button without invition.
+Fixed: UI bug after quiting a battle and launching a new battle.
+
 Input error when the input includes characters like backspace,up,down,etc.
 Bullets and characters can walk through walls.
-
+Battlefield output error: when player is at the left border, he will need two 'right' operation to move right. The same situation occurs at the top border.
+The friendlist catalog is not drawn on login(even when there are friends online).
