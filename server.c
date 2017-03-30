@@ -128,7 +128,12 @@ void user_invited_to_join_battle(uint32_t bid, uint32_t uid) {
 	if(sessions[uid].state == USER_STATE_WAIT_TO_BATTLE
 	&& bid != sessions[uid].bid) {
 		log("user %d@%s rejects old battle #%d\n", uid, sessions[uid].user_name, sessions[uid].bid);
-		send_to_client(sessions[uid].inviter_id, SERVER_MESSAGE_FRIEND_REJECT_BATTLE);
+		battles[sessions[uid].bid].users[uid].battle_state = BATTLE_STATE_UNJOINED;
+
+		server_message_t sm;
+		sm.message = SERVER_MESSAGE_FRIEND_REJECT_BATTLE;
+		strncpy(sm.friend_name, sessions[uid].user_name, USERNAME_SIZE - 1);
+		wrap_send(sessions[sessions[uid].inviter_id].conn, &sm);
 	}
 
 	user_join_battle_common_part(bid, uid, USER_STATE_WAIT_TO_BATTLE);
