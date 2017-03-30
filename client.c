@@ -398,6 +398,12 @@ char *readline() {
 				assert('A' <= ch && ch <= 'D');
 				break;
 			}
+			case 0x7f: //handle backspace(sends delete)
+				if(line_ptr==0)break;
+				line[--line_ptr]='\0';
+				fputc(ch,stdout);
+				fflush(stdout);
+				break;
 			default: {
 				if(line_ptr < sizeof(line) - 1
 				&& 0x20 <= ch && ch < 0x80) {
@@ -474,9 +480,13 @@ void error(const char *output) {
 }
 
 char *accept_input(const char *prompt) {
+	char *line;
 	show_cursor();
-	bottom_bar_output(0, prompt);
-	char *line = readline();
+	do
+	{
+		bottom_bar_output(0, prompt);
+		line = readline();
+	}while(strncmp(line,"",1)==0);
 	hide_cursor();
 	return line;
 }
