@@ -110,8 +110,8 @@ void user_join_battle_common_part(uint32_t bid, uint32_t uid, uint32_t joined_st
 }
 
 void user_join_battle(uint32_t bid, uint32_t uid) {
-	int ux = rand() % BATTLE_W;
-	int uy = rand() % BATTLE_H;
+	int ux = (rand() & 0x7FFF) % BATTLE_W;
+	int uy = (rand() & 0x7FFF) % BATTLE_H;
 	battles[bid].users[uid].pos.x = ux;
 	battles[bid].users[uid].pos.y = uy;
 	log("alloc position (%hhu, %hhu) for launcher #%d@%s\n",
@@ -234,8 +234,8 @@ void random_generate_items(int bid) {
 	int random_kind = rand() % (ITEM_END - 1) + 1;
 
 	battles[bid].items[item_id].kind = random_kind;
-	battles[bid].items[item_id].pos.x = rand() % BATTLE_W;
-	battles[bid].items[item_id].pos.y = rand() % BATTLE_H;
+	battles[bid].items[item_id].pos.x = (rand() & 0x7FFF) % BATTLE_W;
+	battles[bid].items[item_id].pos.y = (rand() & 0x7FFF) % BATTLE_H;
 	log("new item: #%dk%d(%d,%d)\n", item_id,
 			battles[bid].items[item_id].kind,
 			battles[bid].items[item_id].pos.x,
@@ -510,7 +510,7 @@ int client_command_user_login(int uid) {
 int client_command_user_logout(int uid) {
 	if(sessions[uid].state == USER_STATE_BATTLE
 	|| sessions[uid].state == USER_STATE_WAIT_TO_BATTLE) {
-		log("user %d@%s trys to logout was in battle\n", uid, sessions[uid].user_name);
+		log("user %d@%s tries to logout was in battle\n", uid, sessions[uid].user_name);
 		user_quit_battle(sessions[uid].bid, uid);
 	}
 
@@ -714,6 +714,12 @@ int client_command_reject_battle(int uid) {
 
 int client_command_quit(int uid) {
 	int conn = sessions[uid].conn;
+	if(sessions[uid].state == USER_STATE_BATTLE
+	|| sessions[uid].state == USER_STATE_WAIT_TO_BATTLE) {
+		log("user %d@%s tries to quit client was in battle\n", uid, sessions[uid].user_name);
+		user_quit_battle(sessions[uid].bid, uid);
+	}
+
 	sessions[uid].conn = -1;
 	log("user %d@%s quit\n", uid, sessions[uid].user_name);
 	sessions[uid].state = USER_STATE_UNUSED;

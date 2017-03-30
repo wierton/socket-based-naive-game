@@ -964,8 +964,8 @@ void flip_old_items(server_message_t *psm) {
 	wlog("call flip old items\n");
 	lock_cursor();
 	for(int i = 0; i < USER_CNT; i++) {
-		if(sm.user_pos[i].x == 255
-		|| sm.user_pos[i].y == 255)
+		if(sm.user_pos[i].x >= BATTLE_W
+		|| sm.user_pos[i].y >= BATTLE_H)
 			continue;
 
 		wlog("clear user %d@(%d, %d)\n", i, sm.user_pos[i].x, sm.user_pos[i].y);
@@ -990,8 +990,8 @@ void flip_old_items(server_message_t *psm) {
 void draw_users(server_message_t *psm) {
 	lock_cursor();
 	for(int i = 0; i < USER_CNT; i++) {
-		if(psm->user_pos[i].x == 256
-		|| psm->user_pos[i].y == 256)
+		if(psm->user_pos[i].x >= BATTLE_W
+		|| psm->user_pos[i].y >= BATTLE_H)
 			continue;
 
 		set_cursor(psm->user_pos[i].x, psm->user_pos[i].y);
