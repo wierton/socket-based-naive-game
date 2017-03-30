@@ -211,7 +211,6 @@ int button_quit_game() {
 
 int button_launch_battle() {
 	wlog("call button handler %s\n", __func__);
-	wlogi("query if user want to invite friend\n");
 	wlogi("send `launch battle` message to server\n");
 	send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
 

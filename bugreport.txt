@@ -6,7 +6,7 @@ Fixed: Input error when the input includes characters like backspace,up,down,etc
 
 Modified: Bullets and characters can walk through walls.
 ==> Walls changed into grass.
-Modified: After sending 'launch battle' with a friend's name, the friend will be immediately put into battle whether he answered it or not.
+Fixed: Modified: After sending 'launch battle' with a friend's name, the friend will be immediately put into battle whether he answered it or not.
 ==> The enemy will be shown in position(1,1), but nobody is there.
 
-Battlefield output error: when player is at the left border, he will need two 'right' operation to move right. The same situation occurs at the top border.
+Fixed: Battlefield output error: when player is at the left border, he will need two 'right' operation to move right. The same situation occurs at the top border.
