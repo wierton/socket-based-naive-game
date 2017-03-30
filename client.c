@@ -772,6 +772,7 @@ void draw_button_in_main_ui() {
 	draw_button(buttonInviteUser);
 	draw_button(buttonJoinBattle);
 	draw_button(buttonLogout);
+	draw_catalog(&friend_list);
 }
 
 void main_ui() {
