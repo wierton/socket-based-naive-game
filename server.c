@@ -20,8 +20,9 @@ int usleep(int usec);
 void wrap_recv(int conn, client_message_t *pcm);
 void wrap_send(int conn, server_message_t *psm);
 
-void send_to_client(int uid, int reason);
-void close_session(int conn, int reason);
+void send_to_client(int uid, int message);
+void send_to_client_with_username(int uid, int message, char *user_name);
+void close_session(int conn, int message);
 
 struct session_t {
 	char user_name[USERNAME_SIZE];
@@ -137,10 +138,7 @@ void user_invited_to_join_battle(uint32_t bid, uint32_t uid) {
 	&& bid != sessions[uid].bid) {
 		log("user %d@%s rejects old battle #%d since he was invited to a new battle\n", uid, sessions[uid].user_name, sessions[uid].bid);
 
-		server_message_t sm;
-		sm.message = SERVER_MESSAGE_FRIEND_REJECT_BATTLE;
-		strncpy(sm.friend_name, sessions[uid].user_name, USERNAME_SIZE - 1);
-		wrap_send(sessions[sessions[uid].inviter_id].conn, &sm);
+		send_to_client_with_username(sessions[uid].inviter_id, SERVER_MESSAGE_FRIEND_REJECT_BATTLE, sessions[uid].user_name);
 	}
 
 	user_join_battle_common_part(bid, uid, USER_STATE_WAIT_TO_BATTLE);
@@ -607,11 +605,7 @@ int invite_friend_to_battle(int bid, int uid, char *friend_name) {
 		// WARNING: can't move this statement
 		sessions[friend_id].inviter_id = uid;
 
-		server_message_t sm;
-		memset(&sm, 0, sizeof(server_message_t));
-		sm.message = SERVER_MESSAGE_INVITE_TO_BATTLE;
-		strncpy(sm.friend_name, sessions[uid].user_name, USERNAME_SIZE - 1);
-		wrap_send(sessions[friend_id].conn, &sm);
+		send_to_client_with_username(friend_id, SERVER_MESSAGE_INVITE_TO_BATTLE, sessions[uid].user_name);
 	}
 
 	return 0;
@@ -682,15 +676,10 @@ int client_command_accept_battle(int uid) {
 		send_to_client(uid, SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE);
 	}else if(sessions[uid].state == USER_STATE_WAIT_TO_BATTLE) {
 		int inviter_id = sessions[uid].inviter_id;
-
-		server_message_t sm;
-		memset(&sm, 0, sizeof(server_message_t));
-		sm.message = SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE;
-		strncpy(sm.friend_name, sessions[inviter_id].user_name, USERNAME_SIZE - 1);
-
 		int bid = sessions[uid].bid;
+
 		if(battles[bid].is_alloced) {
-			wrap_send(sessions[inviter_id].conn, &sm);
+			send_to_client_with_username(inviter_id, SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE, sessions[inviter_id].user_name);
 			user_join_battle(bid, uid);
 			logi("accept success\n");
 		}else{
@@ -849,16 +838,25 @@ void wrap_send(int conn, server_message_t *psm) {
 	}
 }
 
-void send_to_client(int uid, int reason) {
+void send_to_client(int uid, int message) {
 	int conn = sessions[uid].conn;
 	server_message_t sm;
 	memset(&sm, 0, sizeof(server_message_t));
-	sm.response = reason;
+	sm.response = message;
 	wrap_send(conn, &sm);
 }
 
-void close_session(int conn, int reason) {
-	send_to_client(conn, reason);
+void send_to_client_with_username(int uid, int message, char *user_name) {
+	int conn = sessions[uid].conn;
+	server_message_t sm;
+	memset(&sm, 0, sizeof(server_message_t));
+	sm.response = message;
+	strncpy(sm.friend_name, user_name, USERNAME_SIZE - 1);
+	wrap_send(conn, &sm);
+}
+
+void close_session(int conn, int message) {
+	send_to_client(conn, message);
 	close(conn);
 }
 
