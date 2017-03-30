@@ -651,16 +651,6 @@ void draw_catalog(catalog_t *pcl) {
 	unlock_cursor();
 }
 
-int match_char(char ch) {
-	char cc;
-	echo_off();
-	disable_buffer();
-	do {
-		cc = fgetc(stdin);
-	} while(cc != '\n' && cc != ch);
-	echo_on();
-	return cc;
-}
 
 void run_battle() {
 	wlog("run battle\n");
@@ -693,29 +683,50 @@ void run_battle() {
 int switch_selected_button_respond_to_key(int st, int ed) {
 	int sel = st - 1;
 	int old_sel = sel;
+
+	if(st >= ed) return st;
+
+	echo_off();
+	disable_buffer();
 	wlog("enter select button, [%d, %d)\n", st, ed);
 	while(1) {
-		int ch = match_char('\t');
-		if(ch == '\n' && st <= sel && sel < ed) {
-			break;
+		int ch = fgetc(stdin);
+		wlog("capture key '%c' in button ui\n", ch);
+		switch(ch) {
+			case 'a':
+			case 'w':
+				sel --;
+				if(sel < st) sel = ed - 1;
+				break;
+			case 's':
+			case 'd':
+				sel ++;
+				if(sel >= ed) sel = st;
+				break;
+			case '\t':
+				wlog("sel_menu enter command mode\n");
+				read_and_execute_command();
+				sel = st;
+				break;
 		}
 
-		sel ++;
+		if(ch == '\n') {
+			if(st <= sel && sel < ed) {
+				break;
+			}else{
+				sel = st;
+			}
+		}
 
-		if(old_sel >= st && old_sel < ed) {
+		if(st <= old_sel && old_sel < ed) {
 			draw_button(old_sel);
-		}
-
-		if(sel == ed) {
-			wlog("sel_menu enter command mode\n");
-			read_and_execute_command();
-			sel = st;
 		}
 
 		draw_selected_button(sel);
 		old_sel = sel;
 	}
 
+	echo_on();
 	wlogi("return sel: %d\n", sel);
 	return sel;
 }
@@ -758,7 +769,7 @@ void draw_button_in_start_ui() {
 
 void start_ui() {
 	wlog("enter start ui\n");
-	bottom_bar_output(0, "[help] type <TAB>");
+	bottom_bar_output(0, "type w s a d to switch button, type <TAB> to enter command");
 	while(1) {
 		draw_button_in_start_ui();
 		display_user_state();
@@ -1039,22 +1050,14 @@ void log_psm_info(server_message_t *psm) {
 }
 
 int serv_msg_battle_info(server_message_t *psm) {
-	// FIXME:
 	wlog("call message handler %s\n", __func__);
 	if(user_state == USER_STATE_BATTLE) {
-		wlog("log_psm_info\n");
 		log_psm_info(psm);
-		wlog("assign value to user_bullets\n");
 		user_bullets = psm->bullets_num;
-		wlog("assign value to user_hp\n");
 		user_hp = psm->life;
-		wlog("flip_old_items\n");
 		flip_old_items(psm);
-		wlog("draw_users\n");
 		draw_users(psm);
-		wlog("draw_items\n");
 		draw_items(psm);
-		wlog("display_user_state\n");
 		display_user_state();
 	}
 	return 0;
