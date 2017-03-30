@@ -959,6 +959,7 @@ int serv_msg_accept_battle(server_message_t *psm) {
 
 int serv_msg_reject_battle(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
+	wlog("friend '%s' reject battle\n", psm->friend_name);
 	server_say(sformat("friend %s reject your invitation", psm->friend_name));
 	return 0;
 }
@@ -1050,7 +1051,7 @@ void draw_items(server_message_t *psm) {
 		switch(psm->item_kind[i]) {
 			case ITEM_MAGAZINE:printf("+");break;
 			case ITEM_MAGMA:printf("╳");break;
-			case ITEM_WALL:printf("█");break;
+			case ITEM_GRASS:printf("█");break;
 			case ITEM_BLOOD_VIAL:printf("*");break;
 			case ITEM_BULLET:printf(".");
 		}
@@ -1179,12 +1180,6 @@ void *message_monitor(void *args) {
 		}
 
 		// delay assignment
-		if(sm.message==SERVER_RESPONSE_LOGIN_SUCCESS
-			||sm.message==SERVER_RESPONSE_YOU_HAVE_LOGINED
-			||sm.message==SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
-			||sm.message==SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS
-			||sm.message==SERVER_RESPONSE_LAUNCH_BATTLE_FAIL
-			||sm.message==SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS)
 		global_serv_message = sm.message;
 	}
 	return NULL;
