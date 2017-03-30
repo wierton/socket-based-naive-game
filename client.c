@@ -767,8 +767,8 @@ int switch_selected_button_respond_to_key(int st, int ed) {
 		if(st <= old_sel && old_sel < ed) {
 			draw_button(old_sel);
 		}
-
-		draw_selected_button(sel);
+		if(st<=sel&&sel<ed)
+			draw_selected_button(sel);
 		old_sel = sel;
 	}
 
