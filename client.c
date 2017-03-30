@@ -212,23 +212,8 @@ int button_quit_game() {
 int button_launch_battle() {
 	wlog("call button handler %s\n", __func__);
 	wlogi("query if user want to invite friend\n");
-	if(accept_yesno("invite friend? (yes/no)")) {
-		wlogi("user answer yes\n");
-		wlogi("ask friend's name\n");
-		char *name = accept_input("your friend name: ");
-		wlogi("friend name '%s'\n", name);
-
-		client_message_t cm;
-		memset(&cm, 0, sizeof(client_message_t));
-		cm.command = CLIENT_COMMAND_LAUNCH_BATTLE;
-		strncpy(cm.user_name, name, USERNAME_SIZE - 1);
-		wlogi("send `launch battle` and invitation to server\n");
-		wrap_send(&cm);
-	}else{
-		wlogi("user rejects to invite friend\n");
-		wlogi("send `launch battle` message to server\n");
-		send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
-	}
+	wlogi("send `launch battle` message to server\n");
+	send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
 
 	global_serv_message=-1;
 	do {
@@ -244,6 +229,24 @@ int button_launch_battle() {
 int button_invite_user() {
 	wlog("call button handler %s\n", __func__);
 	bottom_bar_output(0, "please type invite [user] when you are in battle");
+	wlogi("ask friend's name\n");
+	char *name = accept_input("invite who to your battle: ");
+	wlogi("friend name '%s'\n", name);
+
+	client_message_t cm;
+	memset(&cm, 0, sizeof(client_message_t));
+	cm.command = CLIENT_COMMAND_LAUNCH_BATTLE;
+	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
+	wlogi("send `launch battle` and invitation to server\n");
+	wrap_send(&cm);
+
+	global_serv_message=-1;
+	do {
+		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
+		|| global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_FAIL)
+			break;
+	} while(1);
+	wlog("wait until message=%s\n", server_message_s[global_serv_message]);
 	return 0;
 }
 
