@@ -100,10 +100,18 @@ void user_join_battle_common_part(uint32_t bid, uint32_t uid, uint32_t joined_st
 	assert(bid < USER_CNT && uid < USER_CNT);
 
 	log("user %s join in battle %d(%lu users)\n", sessions[uid].user_name, bid, battles[bid].nr_users);
-	battles[bid].nr_users ++;
+
+	if(joined_state == USER_STATE_BATTLE) {
+		battles[bid].nr_users ++;
+		battles[bid].users[uid].battle_state = BATTLE_STATE_LIVE;
+	}else if(joined_state == USER_STATE_WAIT_TO_BATTLE) {
+		battles[bid].users[uid].battle_state = BATTLE_STATE_UNJOINED;
+	}else{
+		loge("check here, other joined_state:%d\n", joined_state);
+	}
+
 	battles[bid].users[uid].life = INIT_LIFE;
 	battles[bid].users[uid].nr_bullets = INIT_BULLETS;
-	battles[bid].users[uid].battle_state = BATTLE_STATE_LIVE;
 
 	sessions[uid].state = joined_state;
 	sessions[uid].bid = bid;
@@ -117,18 +125,17 @@ void user_join_battle(uint32_t bid, uint32_t uid) {
 	log("alloc position (%hhu, %hhu) for launcher #%d@%s\n",
 			ux, uy, uid, sessions[uid].user_name);
 
+	sessions[uid].state = USER_STATE_BATTLE;
+
 	if(battles[bid].users[uid].battle_state == BATTLE_STATE_UNJOINED) {
 		user_join_battle_common_part(bid, uid, USER_STATE_BATTLE);
-	}else{
-		sessions[uid].state = USER_STATE_BATTLE;
 	}
 }
 
 void user_invited_to_join_battle(uint32_t bid, uint32_t uid) {
 	if(sessions[uid].state == USER_STATE_WAIT_TO_BATTLE
 	&& bid != sessions[uid].bid) {
-		log("user %d@%s rejects old battle #%d\n", uid, sessions[uid].user_name, sessions[uid].bid);
-		battles[sessions[uid].bid].users[uid].battle_state = BATTLE_STATE_UNJOINED;
+		log("user %d@%s rejects old battle #%d since he was invited to a new battle\n", uid, sessions[uid].user_name, sessions[uid].bid);
 
 		server_message_t sm;
 		sm.message = SERVER_MESSAGE_FRIEND_REJECT_BATTLE;
