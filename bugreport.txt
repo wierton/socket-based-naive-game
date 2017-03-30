@@ -1,0 +1,4 @@
+UI bug after pressing the "launch battle" button with a friend invited.-fixed
+UI bug after pressing the "launch battle" button without invition.
+Input error when the input includes characters like backspace,up,down,etc.
+Bullets and characters can walk through walls.
