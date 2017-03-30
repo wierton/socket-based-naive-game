@@ -1177,6 +1177,12 @@ void *message_monitor(void *args) {
 		}
 
 		// delay assignment
+		if(sm.message==SERVER_RESPONSE_LOGIN_SUCCESS
+			||sm.message==SERVER_RESPONSE_YOU_HAVE_LOGINED
+			||sm.message==SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
+			||sm.message==SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS
+			||sm.message==SERVER_RESPONSE_LAUNCH_BATTLE_FAIL
+			||sm.message==SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS)
 		global_serv_message = sm.message;
 	}
 	return NULL;
