@@ -7,11 +7,15 @@ Fixed: Type any illegal key in main_ui or start_ui, mysterious box will be shown
 
 Modified: Bullets and characters can walk through walls.
 ==> Walls changed into grass.
-Modified: After sending 'launch battle' with a friend's name, the friend will be immediately put into battle whether he answered it or not.
+Fixed: Modified: After sending 'launch battle' with a friend's name, the friend will be immediately put into battle whether he answered it or not.
 ==> The enemy will be shown in position(1,1), but nobody is there.
 
+<<<<<<< HEAD
 Battlefield output error: when player is at the left border, he will need two 'right' operation to move right. The same situation occurs at the top border.
 In some situation, server will be unable to start:
 [ERROR] server_start:913: Can not bind to port 40000!
 
 Optional: useless function 'invite friend'
+=======
+Fixed: Battlefield output error: when player is at the left border, he will need two 'right' operation to move right. The same situation occurs at the top border.
+>>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283

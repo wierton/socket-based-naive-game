@@ -213,7 +213,11 @@ int button_launch_battle() {
 	wlog("call button handler %s\n", __func__);
 	wlogi("send `launch battle` message to server\n");
 	send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
+<<<<<<< HEAD
 	/* wait for server reply */
+=======
+
+>>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 	global_serv_message=-1;
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
@@ -226,16 +230,28 @@ int button_launch_battle() {
 
 int button_invite_user() {
 	wlog("call button handler %s\n", __func__);
+<<<<<<< HEAD
 	char *name=accept_input("Please input your friend name: ");
 	wlog("friend name '%s'\n",name);
 	/* send invitation */
+=======
+	bottom_bar_output(0, "please type invite [user] when you are in battle");
+	wlogi("ask friend's name\n");
+	char *name = accept_input("invite who to your battle: ");
+	wlogi("friend name '%s'\n", name);
+
+>>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 	client_message_t cm;
 	memset(&cm, 0, sizeof(client_message_t));
 	cm.command = CLIENT_COMMAND_LAUNCH_BATTLE;
 	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
 	wlogi("send `launch battle` and invitation to server\n");
 	wrap_send(&cm);
+<<<<<<< HEAD
 	/* wait for server reply */
+=======
+
+>>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 	global_serv_message=-1;
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
@@ -269,22 +285,26 @@ struct button_t {
 	int (*button_func)();
 } buttons[] = {
 	[buttonLogin]        = {
-		{24, 5}, "login", button_login,
+		{24, 4}, "login", button_login,
 	},
 	[buttonQuitGame]     = {
-		{24, 13},  " quit", button_quit_game,
+		{24, 12},  " quit", button_quit_game,
 	},
 	[buttonLaunchBattle] = {
-		{7, 3},  "launch battle", button_launch_battle,
+		{7, 2},  "launch battle", button_launch_battle,
 	},
 	[buttonInviteUser] = {
-		{7, 7},  " invite user ", button_invite_user,
+		{7, 6},  " invite user ", button_invite_user,
 	},
 	[buttonJoinBattle] = {
+<<<<<<< HEAD
 		{7, 11}, "accept battle", button_join_battle,
+=======
+		{7, 10}, " join battle ", button_join_battle,
+>>>>>>> 9c26460884ccbf16567aebccd35d9f2f62f2c283
 	},
 	[buttonLogout] = {
-		{7, 15}, "    logout   ", button_logout,
+		{7, 14}, "    logout   ", button_logout,
 	},
 
 	// [buttonQuitBattle]   = {{7, 11},   "quit battle"},
@@ -342,7 +362,7 @@ void echo_on() {
 }
 
 void set_cursor(uint32_t x, uint32_t y) {
-	printf("\033[%d;%df", y, x);
+	printf("\033[%d;%df", y + 1, x + 1);
 }
 
 void hide_cursor() {
@@ -435,10 +455,10 @@ char *sformat(const char *format, ...) {
 void bottom_bar_output(int line, const char *format, ...) {
 	assert(line <= 0);
 	lock_cursor();
-	set_cursor(1, SCR_H - 1 + line);
+	set_cursor(0, SCR_H - 1 + line);
 	for(int i = 0; i < scr_actual_w; i++)
 		printf(" ");
-	set_cursor(1, SCR_H - 1 + line);
+	set_cursor(0, SCR_H - 1 + line);
 
 	va_list ap;
 	va_start(ap, format);
@@ -507,7 +527,7 @@ int accept_yesno(const char *prompt) {
 void resume_and_exit(int status) {
 	send_command(CLIENT_COMMAND_USER_QUIT);
 	wrap_set_term_attr(&raw_termio);
-	set_cursor(1, SCR_H + 1);
+	set_cursor(0, SCR_H);
 	show_cursor();
 	close(client_fd);
 	wlog("====================EXIT====================\n\n\n");
@@ -585,7 +605,7 @@ void read_and_execute_command() {
 
 void flip_screen() {
 	lock_cursor();
-	set_cursor(0, SCR_H + 1);
+	set_cursor(0, SCR_H);
 	printf("\033[2J");
 	unlock_cursor();
 }
