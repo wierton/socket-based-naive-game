@@ -1,4 +1,6 @@
 UI bug after pressing the "launch battle" button with a friend invited.-fixed
-UI bug after pressing the "launch battle" button without invition.
+UI bug after pressing the "launch battle" button without invition.-fixed
+UI bug after quiting a battle and launching a new battle.
 Input error when the input includes characters like backspace,up,down,etc.
 Bullets and characters can walk through walls.
+
