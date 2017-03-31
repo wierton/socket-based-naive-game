@@ -668,6 +668,40 @@ int client_command_invite_user(int uid) {
 	return 0;
 }
 
+int client_command_send_message(int uid) 
+{
+	client_message_t *pcm = &sessions[uid].cm;
+	server_message_t sm;
+	memset(&sm,0,sizeof(server_message_t));
+	sm.message=SERVER_MESSAGE_FRIEND_MESSAGE;
+	strncpy(sm.from_user,sessions[uid].user_name,USERNAME_SIZE);
+	strncpy(sm.msg,pcm->message,MSG_SIZE);
+	if(pcm->user_name[0]=='\0')
+	{
+		logi("user %d:%s yells at all users: %s\n", uid, sessions[uid].user_name, pcm->message);
+		int i;
+		for(i=0;i<USER_CNT;i++)
+		{
+			if(uid==i)continue;
+			wrap_send(sessions[i].conn,&sm);
+		}
+	}
+	else
+	{
+		int friend_id=find_uid_by_user_name(pcm->user_name);
+		if(friend_id==-1||friend_id==uid)
+		{
+			logi("user %d:%s fails to speak to '%s':\"%s\"\n",uid,sessions[uid].user_name,pcm->user_name,pcm->message);
+		}
+		else
+		{
+			logi("uiser %d:%s speaks to %d:%s : \"%s\"\n",uid,sessions[uid].user_name,friend_id,pcm->user_name,pcm->message);
+			wrap_send(sessions[friend_id].conn,&sm);
+		}
+	}
+	return 0;
+}
+
 int client_command_accept_battle(int uid) {
 	log("user %s accept battle #%d\n", sessions[uid].user_name, sessions[uid].bid);
 
@@ -807,6 +841,7 @@ static int(*handler[])(int) = {
 	[CLIENT_COMMAND_ACCEPT_BATTLE] = client_command_accept_battle,
 	[CLIENT_COMMAND_REJECT_BATTLE] = client_command_reject_battle,
 	[CLIENT_COMMAND_INVITE_USER] = client_command_invite_user,
+	[CLIENT_COMMAND_SEND_MESSAGE] = client_command_send_message,
 	[CLIENT_COMMAND_MOVE_UP] = client_command_move_up,
 	[CLIENT_COMMAND_MOVE_DOWN] = client_command_move_down,
 	[CLIENT_COMMAND_MOVE_LEFT] = client_command_move_left,

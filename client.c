@@ -534,16 +534,47 @@ int cmd_invite(char *args) {
 	return 0;
 }
 
+int cmd_yell(char *args)
+{
+	char *msg=accept_input("Yell at all users: ");
+	client_message_t cm;
+	cm.command = CLIENT_COMMAND_SEND_MESSAGE;
+	cm.user_name[0]='\0';
+	strncpy(cm.message, msg, MSG_SIZE - 1);
+	wrap_send(&cm);
+	return 0;
+}
+
+int cmd_tell(char *args)
+{
+	if(!args)
+	{
+		bottom_bar_output(0, "Input a friend, or try \"yell\"");
+		return 0;
+	}
+	char *msg=accept_input(sformat("Speak to %s: ",args));
+	client_message_t cm;
+	cm.command = CLIENT_COMMAND_SEND_MESSAGE;
+	strncpy(cm.user_name, args, USERNAME_SIZE - 1);
+	strncpy(cm.message, msg, MSG_SIZE - 1);
+	wrap_send(&cm);
+	return 0;
+}
+
 int cmd_help(char *args) {
 	if(args) {
 		if(strcmp(args, "--list") == 0) {
-			bottom_bar_output(0, "quit, help, ulist, invite");
+			bottom_bar_output(0, "quit, help, ulist, invite, yell, tell");
 		}else if(strcmp(args, "quit") == 0) {
 			bottom_bar_output(0, "quit the game and return terminal");
 		}else if(strcmp(args, "ulist") == 0) {
 			bottom_bar_output(0, "list all online friends");
 		}else if(strcmp(args, "invite") == 0) {
-			bottom_bar_output(0, "invite friend to your battle");
+			bottom_bar_output(0, "invite friend to your battle(need args)");
+		}else if(strcmp(args, "yell") == 0) {
+			bottom_bar_output(0, "send message to all friends");
+		}else if(strcmp(args, "tell") == 0) {
+			bottom_bar_output(0, "send message to one friend(need args)");
 		}else{
 			bottom_bar_output(0, "no help for '%s'", args);
 		}
@@ -560,6 +591,8 @@ static struct {
 	{"quit", cmd_quit},
 	{"ulist", cmd_ulist},
 	{"invite", cmd_invite},
+	{"yell", cmd_yell},
+	{"tell", cmd_tell},
 	/* ------------------- */
 	{"help", cmd_help},
 };
@@ -995,6 +1028,13 @@ int serv_msg_you_are_invited(server_message_t *psm) {
 	return 0;
 }
 
+int serv_msg_friend_msg(server_message_t *psm)
+{
+	wlog("call message handler %s\n", __func__);
+	server_say(sformat("%s: %s", psm->from_user, psm->msg));
+	return 0;
+}
+
 int serv_msg_friend_quit_battle(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	server_say(sformat("friend %s quit battle", psm->friend_name));
@@ -1168,6 +1208,7 @@ static int (*recv_msg_func[])(server_message_t *) = {
 	[SERVER_MESSAGE_FRIEND_NOT_LOGIN] = serv_msg_friend_not_login,
 	[SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE] = serv_msg_friend_already_in_battle,
 	[SERVER_MESSAGE_INVITE_TO_BATTLE] = serv_msg_you_are_invited,
+	[SERVER_MESSAGE_FRIEND_MESSAGE] = serv_msg_friend_msg,
 	[SERVER_MESSAGE_USER_QUIT_BATTLE] = serv_msg_friend_quit_battle,
 	[SERVER_MESSAGE_BATTLE_DISBANDED] = serv_msg_battle_disbanded,
 	[SERVER_MESSAGE_BATTLE_INFORMATION] = serv_msg_battle_info,

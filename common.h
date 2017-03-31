@@ -124,6 +124,7 @@
 #define BATTLE_H (SCR_H - 2)
 
 #define USERNAME_SIZE  7
+#define MSG_SIZE 40
 #define USER_CNT   5
 
 #define INIT_BULLETS 12
@@ -152,6 +153,7 @@ enum {
 	CLIENT_COMMAND_ACCEPT_BATTLE,
 	CLIENT_COMMAND_REJECT_BATTLE,
 	CLIENT_COMMAND_INVITE_USER,
+	CLIENT_COMMAND_SEND_MESSAGE,
 	CLIENT_COMMAND_MOVE_UP,
 	CLIENT_COMMAND_MOVE_DOWN,
 	CLIENT_COMMAND_MOVE_LEFT,
@@ -184,6 +186,7 @@ enum {
 	SERVER_MESSAGE_FRIEND_NOT_LOGIN,
 	SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE,
 	SERVER_MESSAGE_INVITE_TO_BATTLE,
+	SERVER_MESSAGE_FRIEND_MESSAGE,
 	SERVER_MESSAGE_USER_QUIT_BATTLE,
 	SERVER_MESSAGE_BATTLE_DISBANDED,          // since no other users in this battle
 	SERVER_MESSAGE_BATTLE_INFORMATION,
@@ -240,6 +243,7 @@ typedef struct pos_t {
 typedef struct client_message_t {
 	uint8_t command;
 	char user_name[USERNAME_SIZE]; // last byte must be zero
+	char message[MSG_SIZE];
 } client_message_t;
 
 // format of messages sended from server to client
@@ -264,6 +268,11 @@ typedef struct server_message_t {
 			uint8_t item_kind[MAX_ITEM];
 			pos_t item_pos[MAX_ITEM];
 		};
+
+		struct {
+			char from_user[USERNAME_SIZE];
+			char msg[MSG_SIZE];
+		}; // for message
 	};
 } server_message_t;
 
