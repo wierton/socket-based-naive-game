@@ -563,6 +563,11 @@ int cmd_ulist(char *args) {
 }
 
 int cmd_invite(char *args) {
+	if(user_state==USER_STATE_NOT_LOGIN)
+	{
+		bottom_bar_output(0,"Please login first!");
+		return 0;
+	}
 	client_message_t cm;
 	cm.command = CLIENT_COMMAND_INVITE_USER;
 	strncpy(cm.user_name, args, USERNAME_SIZE - 1);
@@ -572,6 +577,11 @@ int cmd_invite(char *args) {
 
 int cmd_yell(char *args)
 {
+	if(user_state==USER_STATE_NOT_LOGIN)
+	{
+		bottom_bar_output(0,"Please login first!");
+		return 0;
+	}
 	char *msg=accept_input("Yell at all users: ");
 	client_message_t cm;
 	cm.command = CLIENT_COMMAND_SEND_MESSAGE;
@@ -583,6 +593,11 @@ int cmd_yell(char *args)
 
 int cmd_tell(char *args)
 {
+	if(user_state==USER_STATE_NOT_LOGIN)
+	{
+		bottom_bar_output(0,"Please login first!");
+		return 0;
+	}
 	if(!args)
 	{
 		bottom_bar_output(0, "Input a friend, or try \"yell\"");
