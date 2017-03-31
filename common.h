@@ -118,13 +118,15 @@
  */
 
 #define SCR_W 60
-#define SCR_H 20
+#define SCR_H 18
 
 #define BATTLE_W (SCR_W)
 #define BATTLE_H (SCR_H - 2)
 
 #define USERNAME_SIZE  7
 #define USER_CNT   5
+
+#define PASSWORD_SIZE USERNAME_SIZE
 
 #define INIT_BULLETS 12
 #define MAX_BULLETS 24
@@ -143,6 +145,7 @@
 
 enum {
 	CLIENT_COMMAND_USER_QUIT,
+	CLIENT_COMMAND_USER_REGISTER,
 	CLIENT_COMMAND_USER_LOGIN,
 	CLIENT_COMMAND_USER_LOGOUT,
 	CLIENT_COMMAND_FETCH_ALL_USERS,
@@ -162,9 +165,14 @@ enum {
 
 enum {
 	SERVER_SAY_NOTHING,
+	SERVER_RESPONSE_REGISTER_SUCCESS,
+	SERVER_RESPONSE_REGISTER_FAIL,
+	SERVER_RESPONSE_YOU_HAVE_REGISTERED,
 	SERVER_RESPONSE_LOGIN_SUCCESS,
 	SERVER_RESPONSE_YOU_HAVE_LOGINED,
 	SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN,
+	SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID,
+	SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD,
 	SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID,    // user id has been registered by other users
 	SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS, // server unable to handle more users
 	SERVER_RESPONSE_ALL_USERS_INFO,
@@ -240,6 +248,7 @@ typedef struct pos_t {
 typedef struct client_message_t {
 	uint8_t command;
 	char user_name[USERNAME_SIZE]; // last byte must be zero
+	char password[PASSWORD_SIZE];
 } client_message_t;
 
 // format of messages sended from server to client

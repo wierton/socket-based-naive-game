@@ -9,6 +9,9 @@
 
 #include "common.h"
 
+#define REGISTERED_USER_LIST_SIZE 10
+
+pthread_mutex_t userlist_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t battles_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t items_lock[USER_CNT];
@@ -23,6 +26,13 @@ void wrap_send(int conn, server_message_t *psm);
 void send_to_client(int uid, int message);
 void send_to_client_with_username(int uid, int message, char *user_name);
 void close_session(int conn, int message);
+
+static int user_list_size = 0;
+
+struct {
+	char user_name[USERNAME_SIZE];
+	char password[PASSWORD_SIZE];
+} registered_user_list[REGISTERED_USER_LIST_SIZE];
 
 struct session_t {
 	char user_name[USERNAME_SIZE];
@@ -468,6 +478,23 @@ void *battle_ruler(void *args) {
 	return NULL;
 }
 
+int check_user_registered(char *user_name, char *password) {
+	for(int i = 0; i < REGISTERED_USER_LIST_SIZE; i++) {
+		if(strncmp(user_name, registered_user_list[i].user_name, USERNAME_SIZE - 1) != 0)
+			continue;
+
+		if(strncmp(password, registered_user_list[i].password, PASSWORD_SIZE - 1) != 0) {
+			logi("user name '%s' sent error password\n", user_name);
+			return SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD;
+		}else{
+			return SERVER_RESPONSE_LOGIN_SUCCESS;
+		}
+	}
+
+	logi("user name '%s' hasn't been registered\n", user_name);
+	return SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID;
+}
+
 void launch_battle(int bid) {
 	pthread_t thread;
 
@@ -477,10 +504,43 @@ void launch_battle(int bid) {
 	}
 }
 
+int client_command_user_register(int uid) {
+	int ul_index = -1;
+	char *user_name = sessions[uid].cm.user_name;
+	char *password = sessions[uid].cm.password;
+
+	for(int i = 0; i < REGISTERED_USER_LIST_SIZE; i++) {
+		if(strncmp(user_name, registered_user_list[i].user_name, USERNAME_SIZE - 1) != 0)
+			continue;
+
+		send_to_client(uid, SERVER_RESPONSE_YOU_HAVE_REGISTERED);
+		return 0;
+	}
+
+	pthread_mutex_lock(&userlist_lock);
+	if(user_list_size < REGISTERED_USER_LIST_SIZE)
+		ul_index = user_list_size ++;
+	pthread_mutex_unlock(&userlist_lock);
+
+	if(ul_index == -1) {
+		send_to_client(uid, SERVER_RESPONSE_REGISTER_FAIL);
+	}else{
+		strncpy(registered_user_list[ul_index].user_name,
+				user_name, USERNAME_SIZE - 1);
+		strncpy(registered_user_list[ul_index].password,
+				password, PASSWORD_SIZE - 1);
+		send_to_client(uid, SERVER_RESPONSE_REGISTER_SUCCESS);
+	}
+	return 0;
+}
+
 int client_command_user_login(int uid) {
 	int is_dup = 0;
 	client_message_t *pcm = &sessions[uid].cm;
 	char *user_name = pcm->user_name;
+	char *password = pcm->password;
+	log("user '%s' try to login\n", user_name);
+	int message = check_user_registered(user_name, password);
 
 	if(query_session_built(uid)) {
 		log("user '%s' has logined\n", sessions[uid].user_name);
@@ -489,7 +549,6 @@ int client_command_user_login(int uid) {
 	}
 
 
-	log("user '%s' try to login\n", user_name);
 	for(int i = 0; i < USER_CNT; i++) {
 		if(query_session_built(i)) {
 			logi("check dup user id: '%s' vs. '%s'\n", user_name, sessions[i].user_name);
@@ -506,12 +565,14 @@ int client_command_user_login(int uid) {
 		log("send fail dup id message to client.\n");
 		send_to_client(uid, SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID);
 		sessions[uid].state = USER_STATE_NOT_LOGIN;
-	}else{
+	}else if(message == SERVER_RESPONSE_LOGIN_SUCCESS){
 		log("user '%s' login success\n", user_name);
 		sessions[uid].state = USER_STATE_LOGIN;
 		send_to_client(uid, SERVER_RESPONSE_LOGIN_SUCCESS);
 		strncpy(sessions[uid].user_name, user_name, USERNAME_SIZE - 1);
 		inform_friends(uid, SERVER_MESSAGE_FRIEND_LOGIN);
+	}else{
+		send_to_client(uid, message);
 	}
 
 	return 0;
@@ -798,6 +859,7 @@ int client_command_fire(int uid) {
 
 static int(*handler[])(int) = {
 	[CLIENT_COMMAND_USER_QUIT] = client_command_quit,
+	[CLIENT_COMMAND_USER_REGISTER] = client_command_user_register,
 	[CLIENT_COMMAND_USER_LOGIN] = client_command_user_login,
 	[CLIENT_COMMAND_USER_LOGOUT] = client_command_user_logout,
 	[CLIENT_COMMAND_FETCH_ALL_USERS] = client_command_fetch_all_users,
