@@ -203,10 +203,12 @@ int button_login() {
 	wlog("wait until message=%s\n", server_message_s[global_serv_message]);
 
 	if(global_serv_message == SERVER_RESPONSE_LOGIN_SUCCESS)
+	{
 		send_command(CLIENT_COMMAND_FETCH_ALL_FRIENDS);
+		user_name = name;
+	}
 
 	wlogi("set user name to '%s'\n", name);
-	user_name = name;
 
 	return 0;
 }
@@ -242,9 +244,9 @@ int button_quit_game() {
 int button_launch_battle() {
 	wlog("call button handler %s\n", __func__);
 	wlogi("send `launch battle` message to server\n");
+	global_serv_message=-1;
 	send_command(CLIENT_COMMAND_LAUNCH_BATTLE);
 	/* wait for server reply */
-	global_serv_message=-1;
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
 		|| global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_FAIL)
@@ -265,9 +267,9 @@ int button_invite_user() {
 	cm.command = CLIENT_COMMAND_LAUNCH_BATTLE;
 	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
 	wlogi("send `launch battle` and invitation to server\n");
+	global_serv_message=-1;
 	wrap_send(&cm);
 	/* wait for server reply */
-	global_serv_message=-1;
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
 		|| global_serv_message == SERVER_RESPONSE_LAUNCH_BATTLE_FAIL)
@@ -1322,6 +1324,14 @@ void *message_monitor(void *args) {
 		}
 
 		// delay assignment
+		if(sm.message == SERVER_RESPONSE_LOGIN_SUCCESS
+			|| sm.message == SERVER_RESPONSE_YOU_HAVE_LOGINED
+			|| sm.message == SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID
+			|| sm.message == SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD
+			|| sm.message == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
+			|| sm.message == SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS
+			|| sm.message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
+			|| sm.message == SERVER_RESPONSE_LAUNCH_BATTLE_FAIL)
 		global_serv_message = sm.message;
 	}
 	return NULL;
