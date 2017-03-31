@@ -508,11 +508,13 @@ int client_command_user_register(int uid) {
 	int ul_index = -1;
 	char *user_name = sessions[uid].cm.user_name;
 	char *password = sessions[uid].cm.password;
+	log("user '%s' tries to register with password '%s'\n", user_name, password);
 
 	for(int i = 0; i < REGISTERED_USER_LIST_SIZE; i++) {
 		if(strncmp(user_name, registered_user_list[i].user_name, USERNAME_SIZE - 1) != 0)
 			continue;
 
+		log("user '%s'&'%s' has been registered\n", user_name, password);
 		send_to_client(uid, SERVER_RESPONSE_YOU_HAVE_REGISTERED);
 		return 0;
 	}
@@ -522,9 +524,12 @@ int client_command_user_register(int uid) {
 		ul_index = user_list_size ++;
 	pthread_mutex_unlock(&userlist_lock);
 
+	log("fetch empty user list index #%d\n", ul_index);
 	if(ul_index == -1) {
+		log("user '%s' registers fail\n", user_name);
 		send_to_client(uid, SERVER_RESPONSE_REGISTER_FAIL);
 	}else{
+		log("user '%s' registers success\n", user_name);
 		strncpy(registered_user_list[ul_index].user_name,
 				user_name, USERNAME_SIZE - 1);
 		strncpy(registered_user_list[ul_index].password,
