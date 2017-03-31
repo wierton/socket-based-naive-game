@@ -62,7 +62,7 @@ struct catalog_t {
 	const char *title;
 	char records[USER_CNT][USERNAME_SIZE];
 } friend_list = {
-	{34, 5}, "online friends",
+	{34, 4}, "online friends",
 };
 
 typedef struct catalog_t catalog_t;
@@ -72,6 +72,8 @@ static char *server_message_s[] = {
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = "SERVER_RESPONSE_LOGIN_SUCCESS",
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = "SERVER_RESPONSE_YOU_HAVE_LOGINED",
 	[SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN] = "SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN",
+	[SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID] = "SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID",
+	[SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD] = "SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD",
 	[SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID] = "SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID",
 	[SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS] = "SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS",
 	[SERVER_RESPONSE_ALL_USERS_INFO] = "SERVER_RESPONSE_ALL_USERS_INFO",
@@ -161,26 +163,30 @@ void send_command(int command) {
 /* all buttons */
 enum {
 	buttonLogin = 0,
-	buttonQuitGame = 1,
-	buttonLaunchBattle = 2,
-	buttonInviteUser = 3,
-	buttonJoinBattle = 4,
-	buttonLogout = 5,
+	buttonRegister = 1,
+	buttonQuitGame = 2,
+	buttonLaunchBattle = 3,
+	buttonInviteUser = 4,
+	buttonJoinBattle = 5,
+	buttonLogout = 6,
 };
 
 int button_login() {
 	wlog("call button handler %s\n", __func__);
 	wlogi("require name\n");
 	char *name = accept_input("your name: ");
-
 	wlogi("input name '%s'\n", name);
 
-	bottom_bar_output(0, "register your name '%s' to server...", name);
+	char *password = accept_input("password: ");
+	wlogi("input password '%s'\n", password);
+
+	bottom_bar_output(0, "try to login with name '%s' ...", name);
 
 	client_message_t cm;
 	memset(&cm, 0, sizeof(client_message_t));
 	cm.command = CLIENT_COMMAND_USER_LOGIN;
 	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
+	strncpy(cm.password, password, PASSWORD_SIZE - 1);
 	wlogi("send login message to server\n");
 	global_serv_message = -1;
 	wrap_send(&cm);
@@ -188,6 +194,8 @@ int button_login() {
 	do {
 		if(global_serv_message == SERVER_RESPONSE_LOGIN_SUCCESS
 		|| global_serv_message == SERVER_RESPONSE_YOU_HAVE_LOGINED
+		|| global_serv_message == SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID
+		|| global_serv_message == SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD
 		|| global_serv_message == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
 		|| global_serv_message == SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS)
 			break;
@@ -199,6 +207,28 @@ int button_login() {
 
 	wlogi("set user name to '%s'\n", name);
 	user_name = name;
+
+	return 0;
+}
+
+int button_register() {
+	wlog("call button handler %s\n", __func__);
+	wlogi("require name\n");
+	char *name = accept_input("your name: ");
+	wlogi("input name '%s'\n", name);
+
+	char *password = accept_input("password: ");
+	wlogi("input password '%s'\n", password);
+
+	bottom_bar_output(0, "register your name '%s' to server...", name);
+
+	client_message_t cm;
+	memset(&cm, 0, sizeof(client_message_t));
+	cm.command = CLIENT_COMMAND_USER_REGISTER;
+	strncpy(cm.user_name, name, USERNAME_SIZE - 1);
+	strncpy(cm.password, password, PASSWORD_SIZE - 1);
+	wlogi("send register message to server\n");
+	wrap_send(&cm);
 
 	return 0;
 }
@@ -270,22 +300,25 @@ struct button_t {
 	int (*button_func)();
 } buttons[] = {
 	[buttonLogin]        = {
-		{24, 4}, "login", button_login,
+		{24, 3}, " login  ", button_login,
+	},
+	[buttonRegister]     = {
+		{24, 7}, "register", button_register,
 	},
 	[buttonQuitGame]     = {
-		{24, 12},  " quit", button_quit_game,
+		{24, 11},"  quit  ", button_quit_game,
 	},
 	[buttonLaunchBattle] = {
-		{7, 2},  "launch battle", button_launch_battle,
+		{7, 1},  "launch battle", button_launch_battle,
 	},
 	[buttonInviteUser] = {
-		{7, 6},  " invite user ", button_invite_user,
+		{7, 5},  " invite user ", button_invite_user,
 	},
 	[buttonJoinBattle] = {
-		{7, 10}, "accept battle", button_join_battle,
+		{7, 9}, "accept battle", button_join_battle,
 	},
 	[buttonLogout] = {
-		{7, 14}, "    logout   ", button_logout,
+		{7, 13}, "    logout   ", button_logout,
 	},
 
 	// [buttonQuitBattle]   = {{7, 11},   "quit battle"},
@@ -522,7 +555,10 @@ int cmd_quit(char *args) {
 }
 
 int cmd_ulist(char *args) {
-	send_command(CLIENT_COMMAND_FETCH_ALL_USERS);
+	if(user_state==USER_STATE_NOT_LOGIN)
+		bottom_bar_output(0,"Please login first!");
+	else
+		send_command(CLIENT_COMMAND_FETCH_ALL_USERS);
 	return 0;
 }
 
@@ -825,7 +861,7 @@ void main_ui() {
 	while(1) {
 		draw_button_in_main_ui();
 		display_user_state();
-		int sel = switch_selected_button_respond_to_key(2, 6);
+		int sel = switch_selected_button_respond_to_key(3, 7);
 		wlog("user select %d\n", sel);
 
 		int ret_code = buttons[sel].button_func();
@@ -845,8 +881,9 @@ void main_ui() {
 }
 
 void draw_button_in_start_ui() {
-	draw_button(buttonQuitGame);
 	draw_button(buttonLogin);
+	draw_button(buttonRegister);
+	draw_button(buttonQuitGame);
 }
 
 void start_ui() {
@@ -855,7 +892,7 @@ void start_ui() {
 	while(1) {
 		draw_button_in_start_ui();
 		display_user_state();
-		int sel = switch_selected_button_respond_to_key(0, 2);
+		int sel = switch_selected_button_respond_to_key(0, 3);
 		wlog("user select %d@%s\n", sel, buttons[sel].s);
 		buttons[sel].button_func();
 
@@ -874,6 +911,24 @@ int serv_response_you_have_not_login(server_message_t *psm) {
 	return 0;
 }
 
+int serv_response_register_success(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("register success");
+	return 0;
+}
+
+int serv_response_register_fail(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("register fail");
+	return 0;
+}
+
+int serv_response_you_have_registered(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("your name has been registered!");
+	return 0;
+}
+
 int serv_response_login_success(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
 	wlog("==> try server_say\n");
@@ -885,9 +940,23 @@ int serv_response_login_success(server_message_t *psm) {
 	return 0;
 }
 
+int serv_response_login_fail_unregistered_userid(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("your name hasn't been registered!");
+	display_user_state();
+	return 0;
+}
+
+int serv_response_login_fail_error_password(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+	server_say("error password!");
+	display_user_state();
+	return 0;
+}
+
 int serv_response_login_fail_dup_userid(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
-	server_say("your name has been registered!");
+	server_say("you have logined in another place!");
 	display_user_state();
 	return 0;
 }
@@ -1190,8 +1259,13 @@ int server_message_your_magazine_is_empty(server_message_t *psm) {
 }
 
 static int (*recv_msg_func[])(server_message_t *) = {
+	[SERVER_RESPONSE_REGISTER_SUCCESS] = serv_response_register_success,
+	[SERVER_RESPONSE_REGISTER_FAIL] = serv_response_register_fail,
+	[SERVER_RESPONSE_YOU_HAVE_REGISTERED] = serv_response_you_have_registered,
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = serv_response_login_success,
 	[SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN] = serv_response_you_have_not_login,
+	[SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID] = serv_response_login_fail_unregistered_userid,
+	[SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD] = serv_response_login_fail_error_password,
 	[SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID] = serv_response_login_fail_dup_userid,
 	[SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS] = serv_response_login_fail_server_limits,
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = serv_response_you_have_logined,
@@ -1233,12 +1307,6 @@ void *message_monitor(void *args) {
 		}
 
 		// delay assignment
-		if(sm.message == SERVER_RESPONSE_LOGIN_SUCCESS
-		|| sm.message == SERVER_RESPONSE_YOU_HAVE_LOGINED
-		|| sm.message == SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID
-		|| sm.message == SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS
-		|| sm.message == SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS
-		|| sm.message == SERVER_RESPONSE_LAUNCH_BATTLE_FAIL)
 		global_serv_message = sm.message;
 	}
 	return NULL;
