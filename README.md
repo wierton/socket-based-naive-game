@@ -1,9 +1,9 @@
 * install
-```shell
-git clone https://github.com/ycpedef/socket-stg
-cd socket-stg
-make
-```
+  ```shell
+  git clone https://github.com/ycpedef/socket-stg
+  cd socket-stg
+  make
+  ```
 * run  
   1. run `./server` in one terminal
   2. run `./client [server_ip]` in another terminal
