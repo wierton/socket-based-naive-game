@@ -1,4 +1,5 @@
 log.txt
 *.log
+*.sh
 client
 server
