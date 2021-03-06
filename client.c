@@ -133,7 +133,7 @@ int connect_to_server() {
         }
     }
     if (!binded)
-        eprintf("Can Not Connet To Server %s:[%d->%d].\n", server_addr, port, port + port_range);
+        eprintf("Can Not Connet To Server %s.\n", server_addr, port, port + port_range);
 
 	return sockfd;
 }
