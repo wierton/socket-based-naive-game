@@ -1,3 +1,7 @@
+upd:
+the following bug has been solved by ycpedef.
+-----
+
 In some situation, server will be unable to start:
 [ERROR] server_start:913: Can not bind to port xxx!
 		/\

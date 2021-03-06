@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <signal.h>
 
 #include "common.h"
 
@@ -12,6 +13,7 @@
 #define wlog(fmt, ...) write_log("%s:%d: " fmt, user_name, __LINE__, ## __VA_ARGS__)
 #define wlogi(fmt, ...) write_log("%s:%d: ==> " fmt, user_name, __LINE__, ## __VA_ARGS__)
 
+static int port = 50000, port_range = 100;
 static int scr_actual_w = 0;
 static int scr_actual_h = 0;
 
@@ -29,7 +31,7 @@ static int client_fd = -1;
 
 static struct termio raw_termio;
 
-static char *server_addr = "127.0.0.1";
+static char *server_addr;
 
 static int global_serv_message = -1;
 
@@ -62,7 +64,7 @@ struct catalog_t {
 	const char *title;
 	char records[USER_CNT][USERNAME_SIZE];
 } friend_list = {
-	{34, 4}, "online friends",
+	{34, 1}, "online friends",
 };
 
 typedef struct catalog_t catalog_t;
@@ -117,15 +119,21 @@ int connect_to_server() {
 	}
 
 	struct sockaddr_in servaddr;
-	memset(&servaddr, 0, sizeof(servaddr));
+    bool binded = false;
+    for (int cur_port = port; cur_port <= port + port_range; cur_port++) {
+        memset(&servaddr, 0, sizeof(servaddr));
 
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(PORT);
-	servaddr.sin_addr.s_addr = inet_addr(server_addr);
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_port = htons(cur_port);
+        servaddr.sin_addr.s_addr = inet_addr(server_addr);
 
-	if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
-		eprintf("Can Not Connect To Server %s!\n", server_addr);
-	}
+        if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == 0) {
+            port = cur_port, binded = true;
+            break;
+        }
+    }
+    if (!binded)
+        eprintf("Can Not Connet To Server %s:[%d->%d].\n", server_addr, port, port + port_range);
 
 	return sockfd;
 }
@@ -805,7 +813,7 @@ void run_battle() {
 			case 's':send_command(CLIENT_COMMAND_MOVE_DOWN);break;
 			case 'a':send_command(CLIENT_COMMAND_MOVE_LEFT);break;
 			case 'd':send_command(CLIENT_COMMAND_MOVE_RIGHT);break;
-			case ' ':send_command(CLIENT_COMMAND_FIRE);break;
+			case ' ': case 'j': send_command(CLIENT_COMMAND_FIRE);break;
 		}
 	}
 
@@ -1344,8 +1352,24 @@ void start_message_monitor() {
 	}
 }
 
+void terminate(int signum) {
+	system("clear");
+    puts("forced quit.");
+    resume_and_exit(signum);
+}
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc < 2 || argc > 3) return puts("./cilent [server_addr]"), 1;
+    if (argc >= 2) {
+        server_addr = (char *)malloc(256);
+        strcpy(server_addr, argv[1]);
+    }
+    if (argc >= 3) {
+        port = atoi(argv[2]);
+    }
+    if (signal(SIGINT, terminate) == SIG_ERR) {
+        signal(SIGINT, terminate);
+    }
 	wlog("====================START====================\n");
 	client_fd = connect_to_server();
 

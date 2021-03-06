@@ -11,6 +11,10 @@
 #include <unistd.h>
 #include <termios.h>
 
+#ifndef bool
+#define bool _Bool
+#endif
+
 #ifndef false
 #define false 0
 #endif
@@ -123,9 +127,9 @@
 #define BATTLE_W (SCR_W)
 #define BATTLE_H (SCR_H - 2)
 
-#define USERNAME_SIZE  7
+#define USERNAME_SIZE  12
 #define MSG_SIZE 40
-#define USER_CNT   5
+#define USER_CNT   10
 
 #define PASSWORD_SIZE USERNAME_SIZE
 
@@ -141,8 +145,6 @@
 #define MAX_OTHER 15
 
 #define MAX_ITEM (USER_CNT * (MAX_BULLETS) + MAX_OTHER)
-
-#define PORT 50000
 
 enum {
 	CLIENT_COMMAND_USER_QUIT,
