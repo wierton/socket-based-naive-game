@@ -13,6 +13,8 @@
 
 #define REGISTERED_USER_FILE "userlist.log"
 
+#define VERSION "v1.1.0"
+
 pthread_mutex_t userlist_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t battles_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -1112,6 +1114,7 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < USER_CNT; i++) {
 		pthread_mutex_init(&items_lock[i], NULL);
 	}
+    log(VERSION "\n");
 
 	server_fd = server_start();
     load_user_list();
