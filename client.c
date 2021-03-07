@@ -966,7 +966,7 @@ int serv_quit(server_message_t* psm) {
 int serv_fatal(server_message_t* psm) {
     wlog("call message handler %s\n", __func__);
     system("clear");
-    puts("forced stoped by a user.\033[?25h");
+    puts("forced terminated by a user.\033[?25h");
     resume_and_exit(3);
     return 0;
 }
