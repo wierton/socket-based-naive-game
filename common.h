@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define VERSION "v1.4.1"
+#define VERSION "v1.4.2"
 
 #include <stdio.h>
 #include <stdlib.h>

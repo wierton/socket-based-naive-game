@@ -474,12 +474,6 @@ char* readline() {
                 READLINE_BACKSPACE;
                 break;
             }
-            case 0x15: {
-                for (int i = 0; i < line_ptr; i++) {
-                    READLINE_BACKSPACE;
-                }
-                break;
-            }
             default: {
                 if (line_ptr < sizeof(line) - 1
                     && 0x20 <= ch && ch < 0x80) {
@@ -843,15 +837,15 @@ void run_battle() {
         }
 
         switch (ch) {
-            case 'k': send_command(CLIENT_COMMAND_MOVE_UP); break;
-            case 'j': send_command(CLIENT_COMMAND_MOVE_DOWN); break;
-            case 'h': send_command(CLIENT_COMMAND_MOVE_LEFT); break;
-            case 'l': send_command(CLIENT_COMMAND_MOVE_RIGHT); break;
+            case 'w': send_command(CLIENT_COMMAND_MOVE_UP); break;
+            case 's': send_command(CLIENT_COMMAND_MOVE_DOWN); break;
+            case 'a': send_command(CLIENT_COMMAND_MOVE_LEFT); break;
+            case 'd': send_command(CLIENT_COMMAND_MOVE_RIGHT); break;
             case ' ': send_command(CLIENT_COMMAND_FIRE); break;
-            case 'a': send_command(CLIENT_COMMAND_FIRE_LEFT); break;
-            case 's': send_command(CLIENT_COMMAND_FIRE_DOWN); break;
-            case 'w': send_command(CLIENT_COMMAND_FIRE_UP); break;
-            case 'd': send_command(CLIENT_COMMAND_FIRE_RIGHT); break;
+            case 'k': send_command(CLIENT_COMMAND_FIRE_UP); break;
+            case 'j': send_command(CLIENT_COMMAND_FIRE_DOWN); break;
+            case 'h': send_command(CLIENT_COMMAND_FIRE_LEFT); break;
+            case 'l': send_command(CLIENT_COMMAND_FIRE_RIGHT); break;
         }
     }
 
