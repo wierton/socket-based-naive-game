@@ -132,8 +132,10 @@ int connect_to_server() {
             break;
         }
     }
-    if (!binded)
+    if (!binded) {
         eprintf("Can Not Connet To Server %s.\n", server_addr);
+        exit(1);
+    }
 
 	return sockfd;
 }
