@@ -283,9 +283,11 @@ static int random_count = 0;
 
 void random_generate_items(int bid) {
     int random_kind, item_id;
-    if (random_count <= 5) random_kind = 3, random_count++;
-    else {
-        if (rand() % 200 > 5) return;
+    if (random_count <= 7) {
+        random_kind = 3, item_id = get_unused_item(bid), random_count++;
+        if (item_id == -1) return;
+    } else {
+        if (rand() % 200 > 2) return;
         if (battles[bid].num_of_other >= MAX_OTHER) return;
         item_id = get_unused_item(bid);
         if (item_id == -1) return;
