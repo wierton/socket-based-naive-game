@@ -825,21 +825,21 @@ void run_battle() {
             send_command(CLIENT_COMMAND_QUIT_BATTLE);
             send_command(CLIENT_COMMAND_FETCH_ALL_FRIENDS);
             break;
-        } else if (ch == '\t') {
+        } else if (ch == '\t' || ch == 'i') {
             wlog("type <TAB> and enter command mode\n");
             read_and_execute_command();
         }
 
         switch (ch) {
-            case 'w': send_command(CLIENT_COMMAND_MOVE_UP); break;
-            case 's': send_command(CLIENT_COMMAND_MOVE_DOWN); break;
-            case 'a': send_command(CLIENT_COMMAND_MOVE_LEFT); break;
-            case 'd': send_command(CLIENT_COMMAND_MOVE_RIGHT); break;
+            case 'k': send_command(CLIENT_COMMAND_MOVE_UP); break;
+            case 'j': send_command(CLIENT_COMMAND_MOVE_DOWN); break;
+            case 'h': send_command(CLIENT_COMMAND_MOVE_LEFT); break;
+            case 'l': send_command(CLIENT_COMMAND_MOVE_RIGHT); break;
             case ' ': send_command(CLIENT_COMMAND_FIRE); break;
-            case 'h': send_command(CLIENT_COMMAND_FIRE_LEFT); break;
-            case 'j': send_command(CLIENT_COMMAND_FIRE_DOWN); break;
-            case 'k': send_command(CLIENT_COMMAND_FIRE_UP); break;
-            case 'l': send_command(CLIENT_COMMAND_FIRE_RIGHT); break;
+            case 'a': send_command(CLIENT_COMMAND_FIRE_LEFT); break;
+            case 's': send_command(CLIENT_COMMAND_FIRE_DOWN); break;
+            case 'w': send_command(CLIENT_COMMAND_FIRE_UP); break;
+            case 'd': send_command(CLIENT_COMMAND_FIRE_RIGHT); break;
         }
     }
 

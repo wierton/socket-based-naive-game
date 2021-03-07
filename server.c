@@ -309,7 +309,7 @@ void random_generate_items(int bid) {
         if (item_id == -1) return;
         random_kind = rand() % (ITEM_END - 1) + 1;
         if (rand() % 3 != 0 && random_kind == 2) random_kind = 1;
-        //if (rand() % 2 != 0 && random_kind == 2) random_kind = 1;
+        if (rand() % 2 != 0 && random_kind == 4) random_kind = 1;
     }
     battles[bid].item_count++;
     battles[bid].items[item_id].kind = random_kind;

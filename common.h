@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define VERSION "v1.3.4"
+#define VERSION "v1.4.0"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,7 +140,7 @@
 #define BULLETS_PER_MAGAZINE 5
 
 #define INIT_LIFE 5
-#define MAX_LIFE 20
+#define MAX_LIFE 15
 #define LIFE_PER_VIAL 3
 
 #define MAGMA_INIT_TIMES 8
