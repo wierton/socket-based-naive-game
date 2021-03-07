@@ -111,6 +111,9 @@ void strlwr(char *s) {
 	}
 }
 
+void u_alarm_handler() {
+}
+
 int connect_to_server() {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -120,6 +123,7 @@ int connect_to_server() {
 
 	struct sockaddr_in servaddr;
     bool binded = false;
+    sigset(SIGALRM, u_alarm_handler);
     for (int cur_port = port; cur_port <= port + port_range; cur_port++) {
         memset(&servaddr, 0, sizeof(servaddr));
 
@@ -127,11 +131,14 @@ int connect_to_server() {
         servaddr.sin_port = htons(cur_port);
         servaddr.sin_addr.s_addr = inet_addr(server_addr);
 
-        if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == 0) {
+        alarm(0.1);
+        if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
             port = cur_port, binded = true;
             break;
         }
+        alarm(0);
     }
+    sigrelse(SIGALRM);
     if (!binded) {
         eprintf("Can Not Connet To Server %s.\n", server_addr);
         exit(1);
@@ -1369,11 +1376,11 @@ int main(int argc, char *argv[]) {
     if (argc >= 3) {
         port = atoi(argv[2]);
     }
+	wlog("====================START====================\n");
+	client_fd = connect_to_server();
     if (signal(SIGINT, terminate) == SIG_ERR) {
         signal(SIGINT, terminate);
     }
-	wlog("====================START====================\n");
-	client_fd = connect_to_server();
 
 	system("clear");
 	init_scr_wh();
