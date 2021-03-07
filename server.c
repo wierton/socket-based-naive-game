@@ -297,6 +297,25 @@ int get_unused_item(int bid) {
     return ret_item_id;
 }
 
+void forced_generate_item(int bid, int kind, int x, int y) {
+    int random_kind, item_id;
+    if (battles[bid].num_of_other >= MAX_OTHER) return;
+    item_id = get_unused_item(bid);
+    if (item_id == -1) return;
+    random_kind = kind;
+    battles[bid].item_count++;
+    battles[bid].items[item_id].kind = random_kind;
+    battles[bid].items[item_id].pos.x = x;
+    battles[bid].items[item_id].pos.y = y;
+    log("new item: #%dk%d(%d,%d)\n", item_id,
+            battles[bid].items[item_id].kind,
+            battles[bid].items[item_id].pos.x,
+            battles[bid].items[item_id].pos.y);
+    if (random_kind == ITEM_MAGMA) {
+        battles[bid].items[item_id].times = MAGMA_INIT_TIMES;
+    }
+}
+
 void random_generate_items(int bid) {
     int random_kind, item_id;
     if (battles[bid].item_count <= 7) {
@@ -945,30 +964,43 @@ int client_command_move_right(int uid) {
 }
 
 int client_command_fire(int uid) {
-    log("user %s fire up\n", sessions[uid].user_name);
+    log("user %s fire\n", sessions[uid].user_name);
     int bid = sessions[uid].bid;
     int item_id = get_unused_item(bid);
     log("alloc item %d for bullet\n", item_id);
     if (item_id == -1) return 0;
-
-    if (battles[bid].users[uid].nr_bullets <= 0) {
-        send_to_client(uid, SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY);
-        return 0;
-    }
-
     int x = battles[bid].users[uid].pos.x;
     int y = battles[bid].users[uid].pos.y;
-    int dir = battles[bid].users[uid].dir;
-    log("bullet, %s@(%d, %d), direct to %d\n",
-            sessions[uid].user_name, x, y, dir);
-    battles[bid].items[item_id].kind = ITEM_BULLET;
-    battles[bid].items[item_id].dir = dir;
-    battles[bid].items[item_id].owner = uid;
-    battles[bid].items[item_id].pos.x = x;
-    battles[bid].items[item_id].pos.y = y;
-
-    battles[bid].users[uid].nr_bullets --;
-
+    switch (battles[bid].users[uid].dir) {
+        case DIR_UP: {
+            for (int i = 1; i <= 5; ++i)
+            {
+                forced_generate_item(bid, 2, x, y - i);
+            }
+            break;
+        }
+        case DIR_DOWN:  {
+            for (int i = 1; i <= 5; ++i)
+            {
+                forced_generate_item(bid, 2, x, y + i);
+            }
+            break;
+        }
+        case DIR_LEFT: {
+            for (int i = 1; i <= 5; ++i)
+            {
+                forced_generate_item(bid, 2, x - i, y);
+            }
+            break;
+        }
+        case DIR_RIGHT: {
+            for (int i = 1; i <= 5; ++i)
+            {
+                forced_generate_item(bid, 2, x + i, y);
+            }
+            break;
+        }
+    }
     return 0;
 }
 
