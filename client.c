@@ -838,8 +838,10 @@ void run_battle() {
             case 's': send_command(CLIENT_COMMAND_MOVE_DOWN); break;
             case 'a': send_command(CLIENT_COMMAND_MOVE_LEFT); break;
             case 'd': send_command(CLIENT_COMMAND_MOVE_RIGHT); break;
-            case ' ':
-            case 'j': send_command(CLIENT_COMMAND_FIRE); break;
+            case 'h': send_command(CLIENT_COMMAND_FIRE_LEFT); break;
+            case 'j': send_command(CLIENT_COMMAND_FIRE_DOWN); break;
+            case 'k': send_command(CLIENT_COMMAND_FIRE_UP); break;
+            case 'l': send_command(CLIENT_COMMAND_FIRE_RIGHT); break;
         }
     }
 

@@ -944,7 +944,33 @@ int client_command_move_right(int uid) {
     return 0;
 }
 
-int client_command_fire(int uid) {
+int client_command_fire_up(int uid) {
+    log("user %s fire up\n", sessions[uid].user_name);
+    int bid = sessions[uid].bid;
+    int item_id = get_unused_item(bid);
+    log("alloc item %d for bullet\n", item_id);
+    if (item_id == -1) return 0;
+
+    if (battles[bid].users[uid].nr_bullets <= 0) {
+        send_to_client(uid, SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY);
+        return 0;
+    }
+
+    int x = battles[bid].users[uid].pos.x;
+    int y = battles[bid].users[uid].pos.y;
+    log("bullet, %s@(%d, %d), direct to %d\n",
+            sessions[uid].user_name, x, y, DIR_UP);
+    battles[bid].items[item_id].kind = ITEM_BULLET;
+    battles[bid].items[item_id].dir = DIR_UP;
+    battles[bid].items[item_id].owner = uid;
+    battles[bid].items[item_id].pos.x = x;
+    battles[bid].items[item_id].pos.y = y;
+
+    battles[bid].users[uid].nr_bullets --;
+
+    return 0;
+}
+int client_command_fire_down(int uid) {
     log("user %s fire\n", sessions[uid].user_name);
     int bid = sessions[uid].bid;
     int item_id = get_unused_item(bid);
@@ -956,13 +982,64 @@ int client_command_fire(int uid) {
         return 0;
     }
 
-    int dir = battles[bid].users[uid].dir;
     int x = battles[bid].users[uid].pos.x;
     int y = battles[bid].users[uid].pos.y;
     log("bullet, %s@(%d, %d), direct to %d\n",
-            sessions[uid].user_name, x, y, dir);
+            sessions[uid].user_name, x, y, DIR_DOWN);
     battles[bid].items[item_id].kind = ITEM_BULLET;
-    battles[bid].items[item_id].dir = dir;
+    battles[bid].items[item_id].dir = DIR_DOWN;
+    battles[bid].items[item_id].owner = uid;
+    battles[bid].items[item_id].pos.x = x;
+    battles[bid].items[item_id].pos.y = y;
+
+    battles[bid].users[uid].nr_bullets --;
+
+    return 0;
+}
+int client_command_fire_left(int uid) {
+    log("user %s fire\n", sessions[uid].user_name);
+    int bid = sessions[uid].bid;
+    int item_id = get_unused_item(bid);
+    log("alloc item %d for bullet\n", item_id);
+    if (item_id == -1) return 0;
+
+    if (battles[bid].users[uid].nr_bullets <= 0) {
+        send_to_client(uid, SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY);
+        return 0;
+    }
+
+    int x = battles[bid].users[uid].pos.x;
+    int y = battles[bid].users[uid].pos.y;
+    log("bullet, %s@(%d, %d), direct to %d\n",
+            sessions[uid].user_name, x, y, DIR_LEFT);
+    battles[bid].items[item_id].kind = ITEM_BULLET;
+    battles[bid].items[item_id].dir = DIR_LEFT;
+    battles[bid].items[item_id].owner = uid;
+    battles[bid].items[item_id].pos.x = x;
+    battles[bid].items[item_id].pos.y = y;
+
+    battles[bid].users[uid].nr_bullets --;
+
+    return 0;
+}
+int client_command_fire_right(int uid) {
+    log("user %s fire\n", sessions[uid].user_name);
+    int bid = sessions[uid].bid;
+    int item_id = get_unused_item(bid);
+    log("alloc item %d for bullet\n", item_id);
+    if (item_id == -1) return 0;
+
+    if (battles[bid].users[uid].nr_bullets <= 0) {
+        send_to_client(uid, SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY);
+        return 0;
+    }
+
+    int x = battles[bid].users[uid].pos.x;
+    int y = battles[bid].users[uid].pos.y;
+    log("bullet, %s@(%d, %d), direct to %d\n",
+            sessions[uid].user_name, x, y, DIR_RIGHT);
+    battles[bid].items[item_id].kind = ITEM_BULLET;
+    battles[bid].items[item_id].dir = DIR_RIGHT;
     battles[bid].items[item_id].owner = uid;
     battles[bid].items[item_id].pos.x = x;
     battles[bid].items[item_id].pos.y = y;
@@ -1001,7 +1078,10 @@ static int(*handler[])(int) = {
     [CLIENT_COMMAND_MOVE_DOWN] = client_command_move_down,
     [CLIENT_COMMAND_MOVE_LEFT] = client_command_move_left,
     [CLIENT_COMMAND_MOVE_RIGHT] = client_command_move_right,
-    [CLIENT_COMMAND_FIRE] = client_command_fire,
+    [CLIENT_COMMAND_FIRE_UP] = client_command_fire_up,
+    [CLIENT_COMMAND_FIRE_DOWN] = client_command_fire_down,
+    [CLIENT_COMMAND_FIRE_LEFT] = client_command_fire_left,
+    [CLIENT_COMMAND_FIRE_RIGHT] = client_command_fire_right,
     [CLIENT_MESSAGE_FATAL] = client_message_fatal,
 };
 
