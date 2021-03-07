@@ -11,9 +11,9 @@
 
 #define REGISTERED_USER_LIST_SIZE 100
 
-#define REGISTERED_USER_FILE "userlist.log"
+#define REGISTERED_USER_FILE "userlists.log"
 
-#define VERSION "v1.1.0"
+#define VERSION "v1.1.4"
 
 pthread_mutex_t userlist_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -60,6 +60,7 @@ struct battle_t {
 	} users[USER_CNT];
 
 	int num_of_other; // number of other alloced item except for bullet
+    int item_count;
 
 	struct {
 		int is_used;
@@ -82,13 +83,21 @@ void load_user_list() {
     }
 #define LOAD_FAIL \
     log("failed to load users, try to delete " REGISTERED_USER_FILE ".\n"), \
-    user_list_size = 0, memset(registered_user_list, 0, sizeof(registered_user_list));
-    if (fscanf(userlist, "%d", &user_list_size) != 1) { LOAD_FAIL; return; }
-    fgetc(userlist);
-    if (user_list_size >= REGISTERED_USER_LIST_SIZE || user_list_size < 0) { LOAD_FAIL; return; }
-    for (int i = 0; i < user_list_size; i++) {
-        if (fgets(registered_user_list[i].user_name, USERNAME_SIZE, userlist) == NULL) { LOAD_FAIL; return; }
-        registered_user_list[i].user_name[strlen(registered_user_list[i].user_name) - 1] = 0;
+    user_list_size = 0, memset(registered_user_list, 0, sizeof(registered_user_list)),\
+    fclose(userlist);
+    for (int i = 0; i < REGISTERED_USER_LIST_SIZE; i++) {
+        if (fgets(registered_user_list[i].user_name, USERNAME_SIZE, userlist) != NULL) {
+            registered_user_list[i].user_name[strlen(registered_user_list[i].user_name) - 1] = 0;
+            for (int j = 0; j < i; j++) {
+                if (strncmp(registered_user_list[i].user_name, registered_user_list[j].user_name, USERNAME_SIZE - 1) != 0)
+                    continue;
+                LOAD_FAIL;
+                return;
+            }
+            user_list_size++;
+        } else {
+            break;
+        }
         if (fgets(registered_user_list[i].password, PASSWORD_SIZE, userlist) == NULL) { LOAD_FAIL; return; }
         registered_user_list[i].password[strlen(registered_user_list[i].password) - 1] = 0;
     }
@@ -97,15 +106,22 @@ void load_user_list() {
         log("loaded user `%s`\n", registered_user_list[i].user_name);
     }
     log("loaded %d users from " REGISTERED_USER_FILE ".\n", user_list_size);
+    fclose(userlist);
 }
 void save_user_list() {
     FILE *userlist = fopen(REGISTERED_USER_FILE, "w");
-    fprintf(userlist, "%d\n", user_list_size);
     for (int i = 0; i < user_list_size; i++) {
         fprintf(userlist, "%s\n", registered_user_list[i].user_name);
         fprintf(userlist, "%s\n", registered_user_list[i].password);
     }
     log("saved %d users to " REGISTERED_USER_FILE ".\n", user_list_size);
+}
+
+void save_user(int i) {
+    FILE *userlist = fopen(REGISTERED_USER_FILE, "a");
+    fprintf(userlist, "%s\n", registered_user_list[i].user_name);
+    fprintf(userlist, "%s\n", registered_user_list[i].password);
+    log("saved users `%s` to " REGISTERED_USER_FILE ".\n", registered_user_list[i].user_name);
 }
 
 int query_session_built(uint32_t uid) {
@@ -281,12 +297,10 @@ int get_unused_item(int bid) {
 	return ret_item_id;
 }
 
-static int random_count = 0;
-
 void random_generate_items(int bid) {
     int random_kind, item_id;
-    if (random_count <= 7) {
-        random_kind = 3, item_id = get_unused_item(bid), random_count++;
+    if (battles[bid].item_count <= 7) {
+        random_kind = 3, item_id = get_unused_item(bid);
         if (item_id == -1) return;
     } else {
         if (rand() % 200 > 2) return;
@@ -295,7 +309,9 @@ void random_generate_items(int bid) {
         if (item_id == -1) return;
         random_kind = rand() % (ITEM_END - 1) + 1;
         if (rand() % 3 != 0 && random_kind == 2) random_kind = 1;
+        //if (rand() % 2 != 0 && random_kind == 2) random_kind = 1;
     }
+    battles[bid].item_count++;
 	battles[bid].items[item_id].kind = random_kind;
 	battles[bid].items[item_id].pos.x = (rand() & 0x7FFF) % BATTLE_W;
 	battles[bid].items[item_id].pos.y = (rand() & 0x7FFF) % BATTLE_H;
@@ -578,7 +594,7 @@ int client_command_user_register(int uid) {
 		strncpy(registered_user_list[ul_index].password,
 				password, PASSWORD_SIZE - 1);
 		send_to_client(uid, SERVER_RESPONSE_REGISTER_SUCCESS);
-        save_user_list();
+        save_user(ul_index);
 	}
 	return 0;
 }
@@ -1079,8 +1095,7 @@ int server_start() {
 void terminate_process(int recved_signal) {
 	for (int i = 0; i < USER_CNT; i++) {
 		if (sessions[i].conn >= 0) {
-			close(sessions[i].conn);
-			log("close conn:%d\n", sessions[i].conn);
+            client_command_quit(i);
 		}
 	}
 
