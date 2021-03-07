@@ -60,6 +60,8 @@ void display_user_state();
 
 void flip_screen();
 
+void show_cursor();
+
 struct catalog_t {
 	pos_t pos;
 	const char *title;
@@ -402,6 +404,7 @@ void hide_cursor() {
 
 void show_cursor() {
 	printf("\033[?25h");
+    fflush(stdout);
 }
 
 int keyboard_detected() {
@@ -556,10 +559,10 @@ int accept_yesno(const char *prompt) {
 }
 
 void resume_and_exit(int status) {
+	show_cursor();
 	send_command(CLIENT_COMMAND_USER_QUIT);
 	wrap_set_term_attr(&raw_termio);
 	set_cursor(0, SCR_H);
-	show_cursor();
 	close(client_fd);
 	wlog("====================EXIT====================\n\n\n");
 	exit(status);
@@ -1361,7 +1364,7 @@ void start_message_monitor() {
 
 void terminate(int signum) {
 	system("clear");
-    puts("forced quit.");
+    puts("forced quit.\033[?25h");
     resume_and_exit(signum);
 }
 
@@ -1377,7 +1380,7 @@ int main(int argc, char *argv[]) {
 	wlog("====================START====================\n");
 	client_fd = connect_to_server();
     if (signal(SIGINT, terminate) == SIG_ERR) {
-        signal(SIGINT, terminate);
+        log("failed to set signal");
     }
 
 	system("clear");
