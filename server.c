@@ -977,10 +977,10 @@ int client_message_fatal(int uid) {
     for (int i = 0; i < USER_CNT; i++) {
         if (sessions[i].conn >= 0) {
             send_to_client(i, SERVER_MESSAGE_FATAL);
-            log("send FATAL to user `%s`: %d\n", sessions[uid].user_name, uid);
+            log("send FATAL to user `%s`: %d\n", sessions[i].user_name, i);
         }
     }
-    terminate_process(3);
+    terminate_process(2);
     return 0;
 }
 
@@ -1141,8 +1141,8 @@ void terminate_process(int recved_signal) {
         pthread_mutex_destroy(&items_lock[i]);
     }
 
-    log("receive terminate signal and exit(0)\n");
-    exit(0);
+    log("receive terminate signal and exit(%d)\n", recved_signal);
+    exit(recved_signal);
 }
 
 int main(int argc, char *argv[]) {
