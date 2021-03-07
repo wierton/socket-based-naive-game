@@ -11,4 +11,4 @@
   2. run `./client [server_ip]` in another terminal
 
 * instructions  
-  forked from [this repository](https://github.com/18atumnYoujin/socket-based-naive-game)
+  forked from [this repository](https://github.com/wierton/socket-based-naive-game)

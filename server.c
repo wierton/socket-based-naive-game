@@ -975,7 +975,7 @@ int client_command_rah(int uid) {
         case DIR_UP: {
             for (int i = 1; i <= 5; ++i)
             {
-                forced_generate_item(bid, 2, x, y - i);
+                forced_generate_item(bid, 2, x, max(y - i, 0));
 				usleep(RAH_SLEEP_BREAK);
             }
             break;
@@ -983,7 +983,7 @@ int client_command_rah(int uid) {
         case DIR_DOWN:  {
             for (int i = 1; i <= 5; ++i)
             {
-                forced_generate_item(bid, 2, x, y + i);
+                forced_generate_item(bid, 2, x, min(y + i, SCR_H - 1));
 				usleep(RAH_SLEEP_BREAK);
             }
             break;
@@ -991,7 +991,7 @@ int client_command_rah(int uid) {
         case DIR_LEFT: {
             for (int i = 1; i <= 5; ++i)
             {
-                forced_generate_item(bid, 2, x - i, y);
+                forced_generate_item(bid, 2, max(x - i, 0), y);
 				usleep(RAH_SLEEP_BREAK);
             }
             break;
@@ -999,7 +999,7 @@ int client_command_rah(int uid) {
         case DIR_RIGHT: {
             for (int i = 1; i <= 5; ++i)
             {
-                forced_generate_item(bid, 2, x + i, y);
+                forced_generate_item(bid, 2, min(x + i, SCR_W - 1), y);
 				usleep(RAH_SLEEP_BREAK);
             }
             break;

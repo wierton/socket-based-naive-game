@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define VERSION "v1.5.1"
+#define VERSION "v1.5.2"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -376,4 +376,11 @@ int get_key() {
     return fgetc(stdin);
 }
 
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
+int min(int a, int b) {
+    return a < b ? a : b;
+}
 #endif
