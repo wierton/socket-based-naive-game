@@ -958,7 +958,7 @@ void start_ui() {
 int serv_quit(server_message_t* psm) {
     wlog("call message handler %s\n", __func__);
     system("clear");
-    puts("server quit.\033[?25h");
+    puts("forced terminated by server.\033[?25h");
     resume_and_exit(1);
     return 0;
 }
