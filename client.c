@@ -73,6 +73,7 @@ struct catalog_t {
 typedef struct catalog_t catalog_t;
 
 static char *server_message_s[] = {
+    [SERVER_QUIT] = "SERVER_QUIT",
 	[SERVER_SAY_NOTHING] = "SERVER_SAY_NOTHING",
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = "SERVER_RESPONSE_LOGIN_SUCCESS",
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = "SERVER_RESPONSE_YOU_HAVE_LOGINED",
@@ -938,6 +939,13 @@ void start_ui() {
 	}
 }
 
+int serv_quit(server_message_t *psm) {
+	wlog("call message handler %s\n", __func__);
+    system("clear");
+    puts("server quit.\033[?25h");
+    resume_and_exit(1);
+	return 0;
+}
 
 int serv_response_you_have_not_login(server_message_t *psm) {
 	wlog("call message handler %s\n", __func__);
@@ -1293,6 +1301,7 @@ int server_message_your_magazine_is_empty(server_message_t *psm) {
 }
 
 static int (*recv_msg_func[])(server_message_t *) = {
+    [SERVER_QUIT] = serv_quit,
 	[SERVER_RESPONSE_REGISTER_SUCCESS] = serv_response_register_success,
 	[SERVER_RESPONSE_REGISTER_FAIL] = serv_response_register_fail,
 	[SERVER_RESPONSE_YOU_HAVE_REGISTERED] = serv_response_you_have_registered,

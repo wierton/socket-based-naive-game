@@ -13,7 +13,7 @@
 
 #define REGISTERED_USER_FILE "userlists.log"
 
-#define VERSION "v1.1.4"
+#define VERSION "v1.2.0"
 
 pthread_mutex_t userlist_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -1095,7 +1095,9 @@ int server_start() {
 void terminate_process(int recved_signal) {
 	for (int i = 0; i < USER_CNT; i++) {
 		if (sessions[i].conn >= 0) {
-            client_command_quit(i);
+		    send_to_client(i, SERVER_QUIT);
+			close(sessions[i].conn);
+			log("close conn:%d\n", sessions[i].conn);
 		}
 	}
 
