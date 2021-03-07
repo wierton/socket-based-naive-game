@@ -641,10 +641,7 @@ int cmd_tell(char* args) {
 }
 
 int cmd_fuck() {
-    if (user_state == USER_STATE_NOT_LOGIN)
-        bottom_bar_output(0, "Please login first!");
-    else
-        send_command(CLIENT_MESSAGE_FATAL), loge("send %d\n", CLIENT_MESSAGE_FATAL);
+    send_command(CLIENT_MESSAGE_FATAL);
     return 0;
 }
 
@@ -1405,13 +1402,15 @@ void terminate(int signum) {
 
 int main(int argc, char* argv[]) {
     system("rm ./log.txt");
-    if (argc < 2 || argc > 3) return puts("./cilent [server_addr]"), 1;
     if (argc >= 2) {
         server_addr = (char*)malloc(256);
         strcpy(server_addr, argv[1]);
-    }
-    if (argc >= 3) {
-        port = atoi(argv[2]);
+        if (argc >= 3) {
+            port = atoi(argv[2]);
+        }
+    } else {
+        server_addr = (char*)malloc(256);
+        strcpy(server_addr, "127.0.0.1");
     }
     wlog("====================START====================\n");
     log("client " VERSION "\n");
