@@ -1404,6 +1404,7 @@ void terminate(int signum) {
 }
 
 int main(int argc, char* argv[]) {
+    system("rm ./log.txt");
     if (argc < 2 || argc > 3) return puts("./cilent [server_addr]"), 1;
     if (argc >= 2) {
         server_addr = (char*)malloc(256);
