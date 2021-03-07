@@ -885,6 +885,8 @@ int switch_selected_button_respond_to_key(int st, int ed) {
                 if (sel >= ed) sel = st;
                 break;
             case '\t':
+            case 'i':
+            case ':':
                 wlog("sel_menu enter command mode\n");
                 read_and_execute_command();
                 sel = st;
@@ -1433,6 +1435,9 @@ int main(int argc, char* argv[]) {
         log("failed to set signal");
     }
     if (signal(SIGINT, terminate) == SIG_ERR) {
+        log("failed to set signal");
+    }
+    if (signal(SIGABRT, terminate) == SIG_ERR) {
         log("failed to set signal");
     }
 
