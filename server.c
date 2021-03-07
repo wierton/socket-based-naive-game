@@ -81,7 +81,7 @@ void load_user_list() {
         log("can not find " REGISTERED_USER_FILE "\n");
         return;
     }
-#define LOAD_FAIL \
+    #define LOAD_FAIL \
     log("failed to load users, try to delete " REGISTERED_USER_FILE ".\n"), \
     user_list_size = 0, memset(registered_user_list, 0, sizeof(registered_user_list)),\
     fclose(userlist);
@@ -101,7 +101,7 @@ void load_user_list() {
         if (fgets(registered_user_list[i].password, PASSWORD_SIZE, userlist) == NULL) { LOAD_FAIL; return; }
         registered_user_list[i].password[strlen(registered_user_list[i].password) - 1] = 0;
     }
-#undef LOAD_FAIL
+    #undef LOAD_FAIL
     for (int i = 0; i < user_list_size; i++) {
         log("loaded user `%s`\n", registered_user_list[i].user_name);
     }

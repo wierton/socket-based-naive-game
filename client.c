@@ -116,9 +116,6 @@ void strlwr(char* s) {
     }
 }
 
-void u_alarm_handler() {
-}
-
 int connect_to_server() {
     log("connecting to %s ...\n", server_addr);
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
