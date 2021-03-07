@@ -13,7 +13,7 @@
 
 #define REGISTERED_USER_FILE "userlists.log"
 
-#define VERSION "v1.2.0"
+#define VERSION "server v1.2.0"
 
 pthread_mutex_t userlist_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
