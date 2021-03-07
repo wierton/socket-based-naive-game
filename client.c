@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <signal.h>
 
 #include "common.h"
@@ -123,7 +124,6 @@ int connect_to_server() {
 
 	struct sockaddr_in servaddr;
     bool binded = false;
-    sigset(SIGALRM, u_alarm_handler);
     for (int cur_port = port; cur_port <= port + port_range; cur_port++) {
         memset(&servaddr, 0, sizeof(servaddr));
 
@@ -131,14 +131,12 @@ int connect_to_server() {
         servaddr.sin_port = htons(cur_port);
         servaddr.sin_addr.s_addr = inet_addr(server_addr);
 
-        alarm(0.1);
         if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
             port = cur_port, binded = true;
             break;
         }
-        alarm(0);
+        printf("%d\n", cur_port);
     }
-    sigrelse(SIGALRM);
     if (!binded) {
         eprintf("Can Not Connet To Server %s.\n", server_addr);
         exit(1);

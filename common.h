@@ -290,4 +290,6 @@ typedef struct server_message_t {
 	};
 } server_message_t;
 
+int sigrelse(int sig);
+
 #endif
