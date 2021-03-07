@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define VERSION "v1.4.2"
+#define VERSION "v1.5.1"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -148,6 +148,8 @@
 
 #define MAX_ITEM (USER_CNT * (MAX_BULLETS) + MAX_OTHER)
 
+#define RAH_SLEEP_BREAK 200000
+
 enum {
     CLIENT_COMMAND_USER_QUIT,
     CLIENT_COMMAND_USER_REGISTER,
@@ -170,6 +172,10 @@ enum {
     CLIENT_COMMAND_FIRE_DOWN,
     CLIENT_COMMAND_FIRE_LEFT,
     CLIENT_COMMAND_FIRE_RIGHT,
+	CLIENT_COMMAND_RAH_UP,
+	CLIENT_COMMAND_RAH_DOWN,
+	CLIENT_COMMAND_RAH_LEFT,
+	CLIENT_COMMAND_RAH_RIGHT,
     CLIENT_MESSAGE_FATAL,
     CLIENT_COMMAND_END,
 };
@@ -357,5 +363,17 @@ static char* signal_name_s[] = {
 #define CLRLINE              "\r\e[K"
 #define NONE                 "\e[0m"
 
+#define ASCII_UP     0xE048
+#define ASCII_DOWN   0xE050
+#define ASCII_LEFT   0xE04B
+#define ASCII_RIGHT  0xE04D
+#define ASCII_ESC    0x001B
+#define ASCII_TAB    0x0009
+#define ASCII_ENTER  0x000D
+#define ASCII_BACK   0x0008
+
+int get_key() {
+    return fgetc(stdin);
+}
 
 #endif

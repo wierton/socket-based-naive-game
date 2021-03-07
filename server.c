@@ -963,7 +963,7 @@ int client_command_move_right(int uid) {
     return 0;
 }
 
-int client_command_fire(int uid) {
+int client_command_rah(int uid) {
     log("user %s fire\n", sessions[uid].user_name);
     int bid = sessions[uid].bid;
     int item_id = get_unused_item(bid);
@@ -976,6 +976,7 @@ int client_command_fire(int uid) {
             for (int i = 1; i <= 5; ++i)
             {
                 forced_generate_item(bid, 2, x, y - i);
+				usleep(RAH_SLEEP_BREAK);
             }
             break;
         }
@@ -983,6 +984,7 @@ int client_command_fire(int uid) {
             for (int i = 1; i <= 5; ++i)
             {
                 forced_generate_item(bid, 2, x, y + i);
+				usleep(RAH_SLEEP_BREAK);
             }
             break;
         }
@@ -990,6 +992,7 @@ int client_command_fire(int uid) {
             for (int i = 1; i <= 5; ++i)
             {
                 forced_generate_item(bid, 2, x - i, y);
+				usleep(RAH_SLEEP_BREAK);
             }
             break;
         }
@@ -997,6 +1000,7 @@ int client_command_fire(int uid) {
             for (int i = 1; i <= 5; ++i)
             {
                 forced_generate_item(bid, 2, x + i, y);
+				usleep(RAH_SLEEP_BREAK);
             }
             break;
         }
@@ -1109,6 +1113,30 @@ int client_command_fire_right(int uid) {
     return 0;
 }
 
+int client_command_rah_up(int uid) {
+    int bid = sessions[uid].bid;
+    battles[bid].users[uid].dir = DIR_UP;
+	return client_command_rah(uid);
+}
+
+int client_command_rah_down(int uid) {
+    int bid = sessions[uid].bid;
+    battles[bid].users[uid].dir = DIR_DOWN;
+	return client_command_rah(uid);
+}
+
+int client_command_rah_left(int uid) {
+    int bid = sessions[uid].bid;
+    battles[bid].users[uid].dir = DIR_LEFT;
+	return client_command_rah(uid);
+}
+
+int client_command_rah_right(int uid) {
+    int bid = sessions[uid].bid;
+    battles[bid].users[uid].dir = DIR_RIGHT;
+	return client_command_rah(uid);
+}
+
 int client_message_fatal(int uid) {
     loge("received FATAL from user `%s`: %d \n", sessions[uid].user_name, uid);
     for (int i = 0; i < USER_CNT; i++) {
@@ -1138,11 +1166,15 @@ static int(*handler[])(int) = {
     [CLIENT_COMMAND_MOVE_DOWN] = client_command_move_down,
     [CLIENT_COMMAND_MOVE_LEFT] = client_command_move_left,
     [CLIENT_COMMAND_MOVE_RIGHT] = client_command_move_right,
-    [CLIENT_COMMAND_FIRE] = client_command_fire,
+    [CLIENT_COMMAND_FIRE] = client_command_rah,
     [CLIENT_COMMAND_FIRE_UP] = client_command_fire_up,
     [CLIENT_COMMAND_FIRE_DOWN] = client_command_fire_down,
     [CLIENT_COMMAND_FIRE_LEFT] = client_command_fire_left,
     [CLIENT_COMMAND_FIRE_RIGHT] = client_command_fire_right,
+    [CLIENT_COMMAND_RAH_UP] = client_command_rah_up,
+    [CLIENT_COMMAND_RAH_DOWN] = client_command_rah_down,
+    [CLIENT_COMMAND_RAH_LEFT] = client_command_rah_left,
+    [CLIENT_COMMAND_RAH_RIGHT] = client_command_rah_right,
     [CLIENT_MESSAGE_FATAL] = client_message_fatal,
 };
 
