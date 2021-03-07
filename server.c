@@ -1250,8 +1250,13 @@ void terminate_process(int recved_signal) {
         pthread_mutex_destroy(&items_lock[i]);
     }
 
-    log("receive terminate signal and exit(%d)\n", recved_signal);
+    log("exit(%d)\n", recved_signal);
     exit(recved_signal);
+}
+
+void terminate_entrance(int recved_signal) {
+    loge("received signal %s, terminate.\n", signal_name_s[recved_signal]);
+    terminate_process(recved_signal);
 }
 
 int main(int argc, char *argv[]) {
@@ -1262,7 +1267,7 @@ int main(int argc, char *argv[]) {
 
     pthread_t thread;
 
-    if (signal(SIGINT, terminate_process) == SIG_ERR) {
+    if (signal(SIGINT, terminate_entrance) == SIG_ERR) {
         eprintf("An error occurred while setting a signal handler.\n");
     }
 

@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-#define LINE_MAX_LEN 20
+#define LINE_MAX_LEN 40
 
 #define wlog(fmt, ...) write_log("%s:%d: " fmt, user_name, __LINE__, ##__VA_ARGS__)
 #define wlogi(fmt, ...) write_log("%s:%d: ==> " fmt, user_name, __LINE__, ##__VA_ARGS__)
@@ -455,6 +455,12 @@ char* readline() {
     lock_cursor();
     echo_off();
     disable_buffer();
+#define READLINE_BACKSPACE \
+        line[--line_ptr] = '\0',\
+        putchar('\b'),\
+        putchar(' '),\
+        putchar('\b'),\
+        fflush(stdout);
     while ((ch = fgetc(stdin)) != '\n') {
         switch (ch) {
             case '\033': {
@@ -463,12 +469,17 @@ char* readline() {
                 assert('A' <= ch && ch <= 'D');
                 break;
             }
-            case 0x7f:  //handle backspace(sends delete)
+            case 0x7f: {
                 if (line_ptr == 0) break;
-                line[--line_ptr] = '\0';
-                fputc(ch, stdout);
-                fflush(stdout);
+                READLINE_BACKSPACE;
                 break;
+            }
+            case 0x15: {
+                for (int i = 0; i < line_ptr; i++) {
+                    READLINE_BACKSPACE;
+                }
+                break;
+            }
             default: {
                 if (line_ptr < sizeof(line) - 1
                     && 0x20 <= ch && ch < 0x80) {
@@ -479,6 +490,7 @@ char* readline() {
             }
         }
     }
+#undef READLINE_BACKSPACE
     line[line_ptr] = 0;
     unlock_cursor();
     return strdup(line);
@@ -825,7 +837,7 @@ void run_battle() {
             send_command(CLIENT_COMMAND_QUIT_BATTLE);
             send_command(CLIENT_COMMAND_FETCH_ALL_FRIENDS);
             break;
-        } else if (ch == '\t' || ch == 'i') {
+        } else if (ch == '\t' || ch == 'i' || ch == ':') {
             wlog("type <TAB> and enter command mode\n");
             read_and_execute_command();
         }
@@ -862,11 +874,13 @@ int switch_selected_button_respond_to_key(int st, int ed) {
         switch (ch) {
             case 'a':
             case 'w':
+            case 'k':
                 sel--;
                 if (sel < st) sel = ed - 1;
                 break;
             case 's':
             case 'd':
+            case 'j':
                 sel++;
                 if (sel >= ed) sel = st;
                 break;
@@ -958,7 +972,7 @@ void start_ui() {
 int serv_quit(server_message_t* psm) {
     wlog("call message handler %s\n", __func__);
     system("clear");
-    puts("forced terminated by server.\033[?25h");
+    puts("forced terminated by server.\033[?25h" NONE);
     resume_and_exit(1);
     return 0;
 }
@@ -966,7 +980,7 @@ int serv_quit(server_message_t* psm) {
 int serv_fatal(server_message_t* psm) {
     wlog("call message handler %s\n", __func__);
     system("clear");
-    puts("forced terminated by a user.\033[?25h");
+    puts("forced terminated by a user.\033[?25h" NONE);
     resume_and_exit(3);
     return 0;
 }
@@ -1396,7 +1410,7 @@ void start_message_monitor() {
 
 void terminate(int signum) {
     system("clear");
-    puts("forced quit.\033[?25h");
+    log("received signal %s, terminate.\033[?25h", signal_name_s[signum]);
     resume_and_exit(signum);
 }
 
@@ -1415,6 +1429,9 @@ int main(int argc, char* argv[]) {
     wlog("====================START====================\n");
     log("client " VERSION "\n");
     client_fd = connect_to_server();
+    if (signal(SIGSEGV, terminate) == SIG_ERR) {
+        log("failed to set signal");
+    }
     if (signal(SIGINT, terminate) == SIG_ERR) {
         log("failed to set signal");
     }

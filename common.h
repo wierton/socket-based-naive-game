@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define VERSION "v1.4.0"
+#define VERSION "v1.4.1"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,22 +62,22 @@
  *   control code: "\033"  (\033 is ascii code of <esc>)
  *
  *   cursor up:             "\033[{count}A"
- *		moves the cursor up by count rows;
- *		the default count is 1.
+ *        moves the cursor up by count rows;
+ *        the default count is 1.
  *
- *	 cursor down:           "\033[{count}B"
- *		moves the cursor down by count rows;
- *		the default count is 1.
+ *     cursor down:           "\033[{count}B"
+ *        moves the cursor down by count rows;
+ *        the default count is 1.
  *
- *	 cursor forward:        "\033[{count}C"
- *		moves the cursor forward by count columns;
- *		the default count is 1.
+ *     cursor forward:        "\033[{count}C"
+ *        moves the cursor forward by count columns;
+ *        the default count is 1.
  *
- *	 cursor backward:       "\033[{count}D"
- *		moves the cursor backward by count columns;
- *		the default count is 1.
+ *     cursor backward:       "\033[{count}D"
+ *        moves the cursor backward by count columns;
+ *        the default count is 1.
  *
- *	 set cursor position:   "\033[{row};{column}f"
+ *     set cursor position:   "\033[{row};{column}f"
  */
 
 /* output style: 16 color mode */
@@ -100,27 +100,27 @@
 
 
 #define log(fmt, ...) \
-	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
+    fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
 
 // inner log
 #define logi(fmt, ...) \
-	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: ==> " fmt, __func__, __LINE__, ## __VA_ARGS__)
+    fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_BLUE "m[LOG] \033[0m" "%s:%d: ==> " fmt, __func__, __LINE__, ## __VA_ARGS__)
 
 #define loge(fmt, ...) \
-	fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
+    fprintf(stderr, "\033[" VT100_STYLE_NORMAL ";" VT100_COLOR_RED "m[ERROR] \033[0m" "%s:%d: " fmt, __func__, __LINE__, ## __VA_ARGS__)
 
 #define eprintf(...) do { \
-	loge(__VA_ARGS__); \
-	exit(0); \
+    loge(__VA_ARGS__); \
+    exit(0); \
 } while(0)
 
 /* detects the width and height of local screen firstly by `ioctl`
  *
  * usage of ioctl:
- *	 struct winsize ws;
- *	 ioctl(STDIN_FILENO, TIOCGWINSZ, &size);
- *	 ws.ws_col;
- *	 ws.ws_row;
+ *     struct winsize ws;
+ *     ioctl(STDIN_FILENO, TIOCGWINSZ, &size);
+ *     ws.ws_col;
+ *     ws.ws_row;
  */
 
 #define SCR_W 60
@@ -149,97 +149,97 @@
 #define MAX_ITEM (USER_CNT * (MAX_BULLETS) + MAX_OTHER)
 
 enum {
-	CLIENT_COMMAND_USER_QUIT,
-	CLIENT_COMMAND_USER_REGISTER,
-	CLIENT_COMMAND_USER_LOGIN,
-	CLIENT_COMMAND_USER_LOGOUT,
-	CLIENT_COMMAND_FETCH_ALL_USERS,
-	CLIENT_COMMAND_FETCH_ALL_FRIENDS,
-	CLIENT_COMMAND_LAUNCH_BATTLE,
-	CLIENT_COMMAND_QUIT_BATTLE,
-	CLIENT_COMMAND_ACCEPT_BATTLE,
-	CLIENT_COMMAND_REJECT_BATTLE,
-	CLIENT_COMMAND_INVITE_USER,
-	CLIENT_COMMAND_SEND_MESSAGE,
-	CLIENT_COMMAND_MOVE_UP,
-	CLIENT_COMMAND_MOVE_DOWN,
-	CLIENT_COMMAND_MOVE_LEFT,
-	CLIENT_COMMAND_MOVE_RIGHT,
-	CLIENT_COMMAND_FIRE,
-	CLIENT_COMMAND_FIRE_UP,
-	CLIENT_COMMAND_FIRE_DOWN,
-	CLIENT_COMMAND_FIRE_LEFT,
-	CLIENT_COMMAND_FIRE_RIGHT,
-	CLIENT_MESSAGE_FATAL,
-	CLIENT_COMMAND_END,
+    CLIENT_COMMAND_USER_QUIT,
+    CLIENT_COMMAND_USER_REGISTER,
+    CLIENT_COMMAND_USER_LOGIN,
+    CLIENT_COMMAND_USER_LOGOUT,
+    CLIENT_COMMAND_FETCH_ALL_USERS,
+    CLIENT_COMMAND_FETCH_ALL_FRIENDS,
+    CLIENT_COMMAND_LAUNCH_BATTLE,
+    CLIENT_COMMAND_QUIT_BATTLE,
+    CLIENT_COMMAND_ACCEPT_BATTLE,
+    CLIENT_COMMAND_REJECT_BATTLE,
+    CLIENT_COMMAND_INVITE_USER,
+    CLIENT_COMMAND_SEND_MESSAGE,
+    CLIENT_COMMAND_MOVE_UP,
+    CLIENT_COMMAND_MOVE_DOWN,
+    CLIENT_COMMAND_MOVE_LEFT,
+    CLIENT_COMMAND_MOVE_RIGHT,
+    CLIENT_COMMAND_FIRE,
+    CLIENT_COMMAND_FIRE_UP,
+    CLIENT_COMMAND_FIRE_DOWN,
+    CLIENT_COMMAND_FIRE_LEFT,
+    CLIENT_COMMAND_FIRE_RIGHT,
+    CLIENT_MESSAGE_FATAL,
+    CLIENT_COMMAND_END,
 };
 
 enum {
-	SERVER_SAY_NOTHING,
-	SERVER_RESPONSE_REGISTER_SUCCESS,
-	SERVER_RESPONSE_REGISTER_FAIL,
-	SERVER_RESPONSE_YOU_HAVE_REGISTERED,
-	SERVER_RESPONSE_LOGIN_SUCCESS,
-	SERVER_RESPONSE_YOU_HAVE_LOGINED,
-	SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN,
-	SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID,
-	SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD,
-	SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID,    // user id has been registered by other users
-	SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS, // server unable to handle more users
-	SERVER_RESPONSE_ALL_USERS_INFO,
-	SERVER_RESPONSE_ALL_FRIENDS_INFO,
-	SERVER_RESPONSE_LAUNCH_BATTLE_FAIL,
-	SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS,
-	SERVER_RESPONSE_YOURE_NOT_IN_BATTLE,
-	SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE,
-	SERVER_RESPONSE_INVITATION_SENT,
-	SERVER_RESPONSE_NOBODY_INVITE_YOU,
-	/* ----------------------------------------------- */
-	SERVER_MESSAGE_DELIM,
-	SERVER_MESSAGE_FRIEND_LOGIN,
-	SERVER_MESSAGE_FRIEND_LOGOUT,
-	SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE,
-	SERVER_MESSAGE_FRIEND_REJECT_BATTLE,
-	SERVER_MESSAGE_FRIEND_NOT_LOGIN,
-	SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE,
-	SERVER_MESSAGE_INVITE_TO_BATTLE,
-	SERVER_MESSAGE_FRIEND_MESSAGE,
-	SERVER_MESSAGE_USER_QUIT_BATTLE,
-	SERVER_MESSAGE_BATTLE_DISBANDED,          // since no other users in this battle
-	SERVER_MESSAGE_BATTLE_INFORMATION,
-	SERVER_MESSAGE_YOU_ARE_DEAD,
-	SERVER_MESSAGE_YOU_ARE_SHOOTED,
-	SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA,
-	SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL,
-	SERVER_MESSAGE_YOU_GOT_MAGAZINE,
-	SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY,
+    SERVER_SAY_NOTHING,
+    SERVER_RESPONSE_REGISTER_SUCCESS,
+    SERVER_RESPONSE_REGISTER_FAIL,
+    SERVER_RESPONSE_YOU_HAVE_REGISTERED,
+    SERVER_RESPONSE_LOGIN_SUCCESS,
+    SERVER_RESPONSE_YOU_HAVE_LOGINED,
+    SERVER_RESPONSE_YOU_HAVE_NOT_LOGIN,
+    SERVER_RESPONSE_LOGIN_FAIL_UNREGISTERED_USERID,
+    SERVER_RESPONSE_LOGIN_FAIL_ERROR_PASSWORD,
+    SERVER_RESPONSE_LOGIN_FAIL_DUP_USERID,    // user id has been registered by other users
+    SERVER_RESPONSE_LOGIN_FAIL_SERVER_LIMITS, // server unable to handle more users
+    SERVER_RESPONSE_ALL_USERS_INFO,
+    SERVER_RESPONSE_ALL_FRIENDS_INFO,
+    SERVER_RESPONSE_LAUNCH_BATTLE_FAIL,
+    SERVER_RESPONSE_LAUNCH_BATTLE_SUCCESS,
+    SERVER_RESPONSE_YOURE_NOT_IN_BATTLE,
+    SERVER_RESPONSE_YOURE_ALREADY_IN_BATTLE,
+    SERVER_RESPONSE_INVITATION_SENT,
+    SERVER_RESPONSE_NOBODY_INVITE_YOU,
+    /* ----------------------------------------------- */
+    SERVER_MESSAGE_DELIM,
+    SERVER_MESSAGE_FRIEND_LOGIN,
+    SERVER_MESSAGE_FRIEND_LOGOUT,
+    SERVER_MESSAGE_FRIEND_ACCEPT_BATTLE,
+    SERVER_MESSAGE_FRIEND_REJECT_BATTLE,
+    SERVER_MESSAGE_FRIEND_NOT_LOGIN,
+    SERVER_MESSAGE_FRIEND_ALREADY_IN_BATTLE,
+    SERVER_MESSAGE_INVITE_TO_BATTLE,
+    SERVER_MESSAGE_FRIEND_MESSAGE,
+    SERVER_MESSAGE_USER_QUIT_BATTLE,
+    SERVER_MESSAGE_BATTLE_DISBANDED,          // since no other users in this battle
+    SERVER_MESSAGE_BATTLE_INFORMATION,
+    SERVER_MESSAGE_YOU_ARE_DEAD,
+    SERVER_MESSAGE_YOU_ARE_SHOOTED,
+    SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA,
+    SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL,
+    SERVER_MESSAGE_YOU_GOT_MAGAZINE,
+    SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY,
 
     SERVER_MESSAGE_QUIT,
     SERVER_MESSAGE_FATAL,
 };
 
 enum {
-	ITEM_NONE,
-	ITEM_MAGAZINE,
-	ITEM_MAGMA,
-	ITEM_GRASS,
-	ITEM_BLOOD_VIAL,
-	ITEM_END,
-	ITEM_BULLET,
+    ITEM_NONE,
+    ITEM_MAGAZINE,
+    ITEM_MAGMA,
+    ITEM_GRASS,
+    ITEM_BLOOD_VIAL,
+    ITEM_END,
+    ITEM_BULLET,
 };
 
 enum {
-	DIR_UP,
-	DIR_DOWN,
-	DIR_LEFT,
-	DIR_RIGHT,
+    DIR_UP,
+    DIR_DOWN,
+    DIR_LEFT,
+    DIR_RIGHT,
 };
 
 enum {
-	BATTLE_STATE_UNJOINED,
-	BATTLE_STATE_LIVE,
-	BATTLE_STATE_WITNESS,
-	BATTLE_STATE_DEAD,
+    BATTLE_STATE_UNJOINED,
+    BATTLE_STATE_LIVE,
+    BATTLE_STATE_WITNESS,
+    BATTLE_STATE_DEAD,
 };
 
 /* unused  -->  not login  -->  login  <-...->  battle
@@ -255,50 +255,82 @@ enum {
 #define USER_STATE_WAIT_TO_BATTLE  4
 
 typedef struct pos_t {
-	uint8_t x;
-	uint8_t y; 
+    uint8_t x;
+    uint8_t y; 
 } pos_t;
 
 // format of messages sended from client to server
 typedef struct client_message_t {
-	uint8_t command;
-	char user_name[USERNAME_SIZE]; // last byte must be zero
-	union
-	{
-		char message[MSG_SIZE];
-		char password[PASSWORD_SIZE];
-	};
+    uint8_t command;
+    char user_name[USERNAME_SIZE]; // last byte must be zero
+    union
+    {
+        char message[MSG_SIZE];
+        char password[PASSWORD_SIZE];
+    };
 } client_message_t;
 
 // format of messages sended from server to client
 typedef struct server_message_t {
-	union {
-		uint8_t response;
-		uint8_t message;
-	};
+    union {
+        uint8_t response;
+        uint8_t message;
+    };
 
-	union {
-		// support at most five users
-		char friend_name[USERNAME_SIZE];
+    union {
+        // support at most five users
+        char friend_name[USERNAME_SIZE];
 
-		struct {
-			char user_name[USERNAME_SIZE];
-			uint8_t user_state;
-		} all_users[USER_CNT];
+        struct {
+            char user_name[USERNAME_SIZE];
+            uint8_t user_state;
+        } all_users[USER_CNT];
 
-		struct {
-			uint8_t life, index, bullets_num;
-			pos_t user_pos[USER_CNT];
-			uint8_t item_kind[MAX_ITEM];
-			pos_t item_pos[MAX_ITEM];
-		};
+        struct {
+            uint8_t life, index, bullets_num;
+            pos_t user_pos[USER_CNT];
+            uint8_t item_kind[MAX_ITEM];
+            pos_t item_pos[MAX_ITEM];
+        };
 
-		struct {
-			char from_user[USERNAME_SIZE];
-			char msg[MSG_SIZE];
-		}; // for message
-	};
+        struct {
+            char from_user[USERNAME_SIZE];
+            char msg[MSG_SIZE];
+        }; // for message
+    };
 } server_message_t;
+
+
+static char* signal_name_s[] = {
+    [SIGHUP   ] =  "SIGHUP",
+    [SIGINT   ] =  "SIGINT",
+    [SIGQUIT  ] =  "SIGQUIT",
+    [SIGILL   ] =  "SIGILL" ,
+    [SIGABRT  ] =  "SIGABRT",
+    [SIGFPE   ] =  "SIGFPE" ,
+    [SIGKILL  ] =  "SIGKILL",
+    [SIGSEGV  ] =  "SIGSEGV",
+    [SIGPIPE  ] =  "SIGPIPE",
+    [SIGALRM  ] =  "SIGALRM",
+    [SIGTERM  ] =  "SIGTERM",
+    [SIGUSR1  ] =  "SIGUSR1",
+    [SIGUSR2  ] =  "SIGUSR2",
+    [SIGCHLD  ] =  "SIGCHLD",
+    [SIGCONT  ] =  "SIGCONT",
+    [SIGSTOP  ] =  "SIGSTOP",
+    [SIGTSTP  ] =  "SIGTSTP",
+    [SIGTTIN  ] =  "SIGTTIN",
+    [SIGTTOU  ] =  "SIGTTOU",
+    [SIGBUS   ] =  "SIGBUS" ,
+    [SIGPOLL  ] =  "SIGPOLL",
+    [SIGPROF  ] =  "SIGPROF",
+    [SIGSYS   ] =  "SIGSYS" ,
+    [SIGTRAP  ] =  "SIGTRAP",
+    [SIGURG   ] =  "SIGURG" ,
+    [SIGVTALRM] =  "SIGVTALRM",
+    [SIGXCPU  ] =  "SIGXCPU",
+    [SIGXFSZ  ] =  "SIGXFSZ",
+};
 
 #define BLACK                "\e[0;30m"
 #define L_BLACK              "\e[1;30m"
