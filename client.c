@@ -119,6 +119,7 @@ void u_alarm_handler() {
 }
 
 int connect_to_server() {
+    log("connecting to %s ...\n", server_addr);
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if(sockfd < 0) {
@@ -1386,6 +1387,7 @@ int main(int argc, char *argv[]) {
         port = atoi(argv[2]);
     }
 	wlog("====================START====================\n");
+    log("client " VERSION "\n");
 	client_fd = connect_to_server();
     if (signal(SIGINT, terminate) == SIG_ERR) {
         log("failed to set signal");

@@ -1,6 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#define VERSION "v1.2.0"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -168,7 +170,6 @@ enum {
 };
 
 enum {
-    SERVER_QUIT,
 	SERVER_SAY_NOTHING,
 	SERVER_RESPONSE_REGISTER_SUCCESS,
 	SERVER_RESPONSE_REGISTER_FAIL,
@@ -207,6 +208,7 @@ enum {
 	SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL,
 	SERVER_MESSAGE_YOU_GOT_MAGAZINE,
 	SERVER_MESSAGE_YOUR_MAGAZINE_IS_EMPTY,
+    SERVER_QUIT,
 };
 
 enum {
@@ -290,7 +292,5 @@ typedef struct server_message_t {
 		}; // for message
 	};
 } server_message_t;
-
-int sigrelse(int sig);
 
 #endif
