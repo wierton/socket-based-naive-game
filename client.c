@@ -73,7 +73,6 @@ struct catalog_t {
 typedef struct catalog_t catalog_t;
 
 static char *server_message_s[] = {
-    [SERVER_QUIT] = "SERVER_QUIT",
 	[SERVER_SAY_NOTHING] = "SERVER_SAY_NOTHING",
 	[SERVER_RESPONSE_LOGIN_SUCCESS] = "SERVER_RESPONSE_LOGIN_SUCCESS",
 	[SERVER_RESPONSE_YOU_HAVE_LOGINED] = "SERVER_RESPONSE_YOU_HAVE_LOGINED",
@@ -105,6 +104,7 @@ static char *server_message_s[] = {
 	[SERVER_MESSAGE_YOU_ARE_SHOOTED] = "SERVER_MESSAGE_YOU_ARE_SHOOTED",
 	[SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA] = "SERVER_MESSAGE_YOU_ARE_TRAPPED_IN_MAGMA",
 	[SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL] = "SERVER_MESSAGE_YOU_GOT_BLOOD_VIAL",
+    [SERVER_QUIT] = "SERVER_QUIT",
 };
 
 void strlwr(char *s) {
@@ -135,7 +135,7 @@ int connect_to_server() {
         servaddr.sin_port = htons(cur_port);
         servaddr.sin_addr.s_addr = inet_addr(server_addr);
 
-        if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
+        if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == 0) {
             port = cur_port, binded = true;
             break;
         }
