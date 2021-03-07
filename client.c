@@ -126,7 +126,7 @@ int connect_to_server() {
 
 	struct sockaddr_in servaddr;
     bool binded = false;
-    for (int cur_port = port; cur_port <= port + port_range; cur_port++) {
+    for (int cur_port = port + port_range; cur_port >= port; cur_port--) {
         memset(&servaddr, 0, sizeof(servaddr));
 
         servaddr.sin_family = AF_INET;
@@ -137,7 +137,6 @@ int connect_to_server() {
             port = cur_port, binded = true;
             break;
         }
-        printf("%d\n", cur_port);
     }
     if (!binded) {
         eprintf("Can Not Connet To Server %s.\n", server_addr);
