@@ -520,6 +520,23 @@ void *battle_ruler(void *args) {
 	// FIXME: battle re-alloced before exiting loop 
 	while (battles[bid].is_alloced) {
 		move_bullets(bid);
+		check_who_is_shooted(bid);
+		check_who_is_dead(bid);
+		usleep(10000);
+		move_bullets(bid);
+		check_who_is_shooted(bid);
+		check_who_is_dead(bid);
+		usleep(10000);
+		move_bullets(bid);
+		check_who_is_shooted(bid);
+		check_who_is_dead(bid);
+		usleep(10000);
+		move_bullets(bid);
+		check_who_is_shooted(bid);
+		check_who_is_dead(bid);
+		usleep(10000);
+
+		move_bullets(bid);
 		check_who_get_blood_vial(bid);
 		check_who_traped_in_magma(bid);
 		check_who_got_charger(bid);
@@ -529,8 +546,7 @@ void *battle_ruler(void *args) {
 		random_generate_items(bid);
 
 		inform_all_user_battle_state(bid);
-
-		usleep(50000);
+        usleep(10000);
 	}
 	return NULL;
 }
