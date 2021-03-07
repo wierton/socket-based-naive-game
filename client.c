@@ -1218,9 +1218,9 @@ void draw_users(server_message_t* psm) {
 
         set_cursor(psm->user_pos[i].x, psm->user_pos[i].y);
         if (i == psm->index)
-            printf("Y");
+            printf(GREEN "Y" NONE);
         else
-            printf("A");
+            printf(RED "A" NONE);
     }
 
     fflush(stdout);
@@ -1236,7 +1236,7 @@ void draw_items(server_message_t* psm) {
         set_cursor(psm->item_pos[i].x, psm->item_pos[i].y);
         switch (psm->item_kind[i]) {
             case ITEM_MAGAZINE: printf("+"); break;
-            case ITEM_MAGMA: printf("╳"); break;
+            case ITEM_MAGMA: printf("X"); break;
             case ITEM_GRASS: printf("█"); break;
             case ITEM_BLOOD_VIAL: printf("*"); break;
             case ITEM_BULLET: printf(".");
