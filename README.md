@@ -1,6 +1,8 @@
 * install
   ```shell
   git clone https://github.com/ycpedef/socket-stg
+  # or
+  # git clone https://gitee.com/yuanchenpu/socket-stg
   cd socket-stg
   make
   ```
