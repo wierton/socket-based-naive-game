@@ -448,7 +448,7 @@ void init_scr_wh() {
 
 /* functions to maintain bar */
 char* readline() {
-    char ch;
+    int ch;
     int line_ptr = 0;
     char line[LINE_MAX_LEN];
     memset(line, 0, sizeof(line));
@@ -461,11 +461,11 @@ char* readline() {
         putchar(' '),\
         putchar('\b'),\
         fflush(stdout);
-    while ((ch = fgetc(stdin)) != '\n') {
+    while ((ch = get_key()) != '\n') {
         switch (ch) {
             case '\033': {
-                ch = fgetc(stdin);
-                ch = fgetc(stdin);
+                ch = get_key();
+                ch = get_key();
                 assert('A' <= ch && ch <= 'D');
                 break;
             }
@@ -824,7 +824,7 @@ void run_battle() {
     echo_off();
     disable_buffer();
     while (user_state == USER_STATE_BATTLE) {
-        int ch = fgetc(stdin);
+        int ch = get_key();
         if (ch == 'q') {
             wlog("type q and quit battle\n");
             user_state = USER_STATE_LOGIN;
@@ -846,6 +846,17 @@ void run_battle() {
             case 'j': send_command(CLIENT_COMMAND_FIRE_DOWN); break;
             case 'h': send_command(CLIENT_COMMAND_FIRE_LEFT); break;
             case 'l': send_command(CLIENT_COMMAND_FIRE_RIGHT); break;
+			case '': {
+				ch = get_key();
+				ch = get_key();
+				switch (ch) 
+				{
+					case 'A': send_command(CLIENT_COMMAND_RAH_UP);   break;
+					case 'B': send_command(CLIENT_COMMAND_RAH_DOWN); break;
+					case 'D': send_command(CLIENT_COMMAND_RAH_LEFT); break;
+					case 'C': send_command(CLIENT_COMMAND_RAH_RIGHT);break;
+				}
+		    }
         }
     }
 
@@ -863,7 +874,7 @@ int switch_selected_button_respond_to_key(int st, int ed) {
     disable_buffer();
     wlog("enter select button, [%d, %d)\n", st, ed);
     while (1) {
-        int ch = fgetc(stdin);
+        int ch = get_key();
         wlog("capture key '%c' in button ui\n", ch);
         switch (ch) {
             case 'a':
